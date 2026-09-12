@@ -1,0 +1,19 @@
+# Backend (Python)
+.venv/
+__pycache__/
+*.pyc
+backend/.env
+
+# Datos y archivos subidos: se ignora el CONTENIDO, no la carpeta
+# (así el .gitkeep queda versionado y la carpeta existe en cualquier clone nuevo)
+backend/data/*
+!backend/data/.gitkeep
+backend/storage/payment_proofs/*
+!backend/storage/payment_proofs/.gitkeep
+
+# Frontend build
+frontend/assets/css/tailwind.css
+
+# Editor / OS
+.DS_Store
+Thumbs.db

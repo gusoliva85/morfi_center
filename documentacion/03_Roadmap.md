@@ -98,9 +98,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Crear `backend/app/{core,db,models,schemas,repositories,services,services/external,api,api/routes}`, `backend/tests/{unit,api}`, `backend/data`, `backend/storage/payment_proofs`, `frontend/{pages/{auth,cliente,admin,delivery},partials,assets/{css,js,js/pages,img}}`, `documentacion/Fases`, `deploy`, `.github/workflows`. Agregar `.gitkeep` en las vacías. `backend/alembic/` no se crea acá: lo genera `alembic init` en T-0.3.3 (crearlo antes rompería ese comando). No se crea `backend/app/jobs/`: el proyecto no tiene procesos de fondo (ver `02_Documento_Tecnico.md §10`) — la mención a `jobs` en versiones anteriores de esta tarea era un resabio de antes de esa decisión.
   _Prueba:_ el árbol coincide con `02_Documento_Tecnico.md §4`. _Depende de:_ —
 
-- [ ] **T-0.1.2 · [Infra] `.gitignore` y archivos raíz**
-  `.gitignore` con `backend/data/`, `backend/storage/`, `backend/.env`, `__pycache__/`, `*.pyc`, `.venv/`, `frontend/assets/css/tailwind.css`. Crear `README.md` mínimo del proyecto.
-  _Prueba:_ `git status` no lista datos ni entorno. _Depende de:_ T-0.1.1
+- [x] **T-0.1.2 · [Infra] `.gitignore` y archivos raíz**
+  `.gitignore` con `backend/data/*` + `!backend/data/.gitkeep`, `backend/storage/payment_proofs/*` + `!backend/storage/payment_proofs/.gitkeep` (se ignora el contenido, no la carpeta, para que el `.gitkeep` de T-0.1.1 quede versionado), `backend/.env`, `__pycache__/`, `*.pyc`, `.venv/`, `frontend/assets/css/tailwind.css`. Crear `README.md` mínimo del proyecto (qué es, stack, cómo se arranca en local — ver `02_Documento_Tecnico.md §24.2`).
+  _Prueba:_ `git status` no lista datos ni entorno; `backend/data/.gitkeep` y `backend/storage/payment_proofs/.gitkeep` siguen versionados. _Depende de:_ T-0.1.1
 
 - [ ] **T-0.1.3 · [Infra] `requirements.txt` y `pyproject.toml`**
   `requirements.txt`: fastapi, uvicorn[standard], sqlalchemy, alembic, pydantic, pydantic-settings, passlib[bcrypt], pyjwt, authlib, httpx, python-multipart, slowapi. `pyproject.toml` con config de ruff, black (line 100) y pytest.

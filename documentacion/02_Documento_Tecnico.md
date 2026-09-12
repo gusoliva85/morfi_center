@@ -220,7 +220,7 @@ Morfi Center/
 └── .gitignore
 ```
 
-`.gitignore` mínimo: `backend/data/`, `backend/storage/`, `backend/.env`, `__pycache__/`, `*.pyc`, `.venv/`, `frontend/assets/css/tailwind.css` (si se genera por build).
+`.gitignore` mínimo: `backend/data/*` + `!backend/data/.gitkeep`, `backend/storage/payment_proofs/*` + `!backend/storage/payment_proofs/.gitkeep` (ignora el **contenido**, no la carpeta — así el `.gitkeep` queda versionado y la carpeta existe en cualquier clone nuevo), `backend/.env`, `__pycache__/`, `*.pyc`, `.venv/`, `frontend/assets/css/tailwind.css` (si se genera por build).
 
 ---
 
