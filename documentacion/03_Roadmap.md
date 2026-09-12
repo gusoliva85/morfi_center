@@ -183,7 +183,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 > **Nota:** este tema tenía una tarea `T-0.5.1` para un script `iniciar.bat`. Se descartó definitivamente al pivotear a despliegue en producción (Vercel + VPS): el proyecto deja de pensarse como "correr local con un doble clic". El desarrollo local se arranca a mano (§24.2 del Documento Técnico, documentado en el `README.md`); el despliegue real es la nueva Tema 0.7 de esta fase.
 
-- [ ] **T-0.5.2 · [Infra] `pytest` configurado + `conftest.py` base**
+- [x] **T-0.5.2 · [Infra] `pytest` configurado + `conftest.py` base**
   `conftest.py` con fixtures `session` (SQLite en memoria + `create_all`) y `client` (`httpx.AsyncClient` con override de `get_session`).
   _Prueba:_ `pytest` corre (0 tests o 1 test dummy de `/health`) en verde. _Depende de:_ T-0.3.2, T-0.2.6
 
