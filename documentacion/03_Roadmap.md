@@ -147,7 +147,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `alembic init alembic`; ajustar `env.py` para tomar `settings.database_url` y `Base.metadata`, `render_as_batch=True` (SQLite). `alembic.ini` sin URL hardcodeada.
   _Prueba:_ `alembic revision -m "baseline"` y `alembic upgrade head` sin errores (aún sin tablas). _Depende de:_ T-0.3.2
 
-- [ ] **T-0.3.4 · [Backend] `db/seed.py` — esqueleto idempotente**
+- [x] **T-0.3.4 · [Backend] `db/seed.py` — esqueleto idempotente**
   Función `run_seed(session)` vacía pero ejecutable vía `python -m app.db.seed`. Se completa en cada fase.
   _Prueba:_ `python -m app.db.seed` termina sin error. _Depende de:_ T-0.3.1
 
