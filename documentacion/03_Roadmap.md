@@ -171,8 +171,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Portar el mockup `04_Artesanal_Organico.html` a la estructura real, usando los parciales de T-0.4.3 (`header`, `cart-bar`, `bottom-nav` vía `data-partial`): chip de estado, countdown (ticket de kraft, estático), Plato del Día (sello), promos, chips de categoría, lista de productos con un ítem "sin stock", panel de dirección. **Todo con datos hardcodeados**, sin fetch. **Fotos reales en vez de emoji/gradiente**: el usuario proveyó 9 fotos de platos (`documentacion/platos_test/`, copiadas a `frontend/assets/img/platos/`) — se usan en el Plato del Día y en 8 ítems del menú (uno marcado "sin stock"), reemplazando los placeholders `.foodA..D` + emoji del mockup original.
   _Prueba:_ a 360px se ve la versión móvil con bottom nav; a 1440px el layout cambia (nav arriba, grilla, sin elementos estirados). _Depende de:_ T-0.4.3
 
-- [ ] **T-0.4.5 · [Frontend] `assets/js/format.js`**
-  `formatMoney(cents)` → `$00.000`, `formatDate`, `formatTime`, `pad2`.
+- [x] **T-0.4.5 · [Frontend] `assets/js/format.js`**
+  `formatMoney(cents)` → `$00.000`, `formatDate`, `formatTime`, `pad2`. **`formatTime` fuerza `hour12: false`**: sin eso, `toLocaleTimeString("es-AR")` devuelve 12hs con sufijo (`"12:00 p. m."`) en vez de las 24hs que usa el resto del proyecto ("Cierre 12:00") — se detectó corriendo la función de verdad, no revisando el código a ojo.
   _Prueba:_ tests manuales en consola: `formatMoney(3180000) === "$31.800"`. _Depende de:_ —
 
 - [ ] **T-0.4.6 · [Frontend] `assets/js/api.js` y `auth.js` (esqueleto)**
