@@ -135,7 +135,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 0.3 · Base de datos y migraciones
 
-- [ ] **T-0.3.1 · [Backend] `db/session.py` — engine SQLite + PRAGMAs**
+- [x] **T-0.3.1 · [Backend] `db/session.py` — engine SQLite + PRAGMAs**
   `create_engine(settings.database_url, connect_args={"check_same_thread": False})`, listener que aplica `PRAGMA foreign_keys=ON`, `journal_mode=WAL`, `busy_timeout=5000`. `SessionLocal` y `get_session()` (commit/rollback/close). Crea `backend/data/` si falta.
   _Prueba:_ script que abre sesión y ejecuta `PRAGMA foreign_keys` → `1`. _Depende de:_ T-0.2.1
 
