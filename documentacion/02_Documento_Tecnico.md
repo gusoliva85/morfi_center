@@ -1641,7 +1641,7 @@ Principios que lo hacen posible: capas de una sola dirección, repos como única
 - **Turnos**: `open_time`/`close_time` se guardan como **hora de pared local** (`"12:00"`); para una `service_date` dada se resuelven a un instante absoluto con `APP_TIMEZONE` y se comparan en UTC.
 - **Countdown**: el front usa el `now` que devuelve `GET /shift/current` para no depender del reloj del dispositivo.
 - **Ventana de cancelación**: `cancel_deadline = close_datetime_utc - cancel_window_min`.
-- Librería: `zoneinfo` (stdlib). Helpers en `core/timezone.py` (`now_utc()`, `to_local()`, `resolve_shift_instant(date, "HH:MM")`).
+- Librería: `zoneinfo` (stdlib) + paquete `tzdata` (verificado: en Windows `zoneinfo` no trae la base de datos IANA integrada y `ZoneInfo("America/Argentina/Buenos_Aires")` falla con `ZoneInfoNotFoundError` sin `tzdata` instalado; en Linux suele venir del sistema, pero `tzdata` lo garantiza en cualquier entorno de desarrollo o despliegue). Helpers en `core/timezone.py` (`now_utc()`, `to_local()`, `resolve_shift_instant(date, "HH:MM")`).
 
 ---
 

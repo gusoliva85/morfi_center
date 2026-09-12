@@ -125,8 +125,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Logging stdlib; en `production` formato JSON. Middleware que asigna `X-Request-Id` y lo agrega a los logs.
   _Prueba:_ una request devuelve header `X-Request-Id` y aparece en el log. _Depende de:_ T-0.2.1
 
-- [ ] **T-0.2.5 · [Backend] `core/timezone.py`**
-  Helpers `now_utc()`, `to_local(dt)`, `resolve_shift_instant(date, "HH:MM")` usando `zoneinfo` y `APP_TIMEZONE`.
+- [x] **T-0.2.5 · [Backend] `core/timezone.py`**
+  Helpers `now_utc()`, `to_local(dt)`, `resolve_shift_instant(date, "HH:MM")` usando `zoneinfo` y `APP_TIMEZONE`. Agregar **`tzdata`** a `requirements.txt`: se verificó que en Windows `zoneinfo.ZoneInfo("America/Argentina/Buenos_Aires")` falla con `ZoneInfoNotFoundError` sin ese paquete (Windows no trae la base IANA integrada) — sin él, cualquiera desarrollando en Windows tendría el backend roto desde este punto.
   _Prueba:_ tests: `resolve_shift_instant("2026-09-10","12:00")` da el instante UTC correcto para Buenos Aires. _Depende de:_ T-0.2.1
 
 - [ ] **T-0.2.6 · [Backend] `main.py` — app FastAPI + healthcheck**
