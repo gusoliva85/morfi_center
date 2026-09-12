@@ -159,8 +159,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Declarar `.paper`, `.blob`/`.blob2`, `.stamp`, `.tape`, `.dashed`, `.lift`, `.foodA..D` y el media query de `prefers-reduced-motion` (según skill `morfi-frontend`).
   _Prueba:_ una página de test muestra las utilidades y una card con hover `.lift`. _Depende de:_ —
 
-- [ ] **T-0.4.2 · [Frontend] `tailwind.config.js` + carga de fuentes**
-  Tokens (`kraft/cream/bark/forest/mustard/brick`), `fontFamily` display=Bricolage Grotesque / hand=Caveat / sans=Inter, `content` con html y js. Link a Google Fonts. En dev se admite el CDN de Tailwind.
+- [x] **T-0.4.2 · [Frontend] `tailwind.config.js` + carga de fuentes**
+  Tokens (`kraft/cream/bark/forest/mustard/brick`), `fontFamily` display=Bricolage Grotesque / hand=Caveat / sans=Inter, `content` con html y js. Link a Google Fonts. En dev se admite el CDN de Tailwind. **Corrección a `base.css` de T-0.4.1**: le faltaban las directivas `@tailwind base/components/utilities` — sin ellas, el build de producción del §15.6 (`tailwindcss -i assets/css/base.css -o assets/css/tailwind.css`) no generaría ninguna clase de Tailwind, solo las utilidades custom. Se detectó corriendo un build real de Tailwind (no solo revisando el JS), y se corrigió.
   _Prueba:_ el texto renderiza con las 3 fuentes y los colores del token aplican. _Depende de:_ —
 
 - [ ] **T-0.4.3 · [Frontend] Parciales base: `header`, `bottom-nav`, `top-nav`, `cart-bar`**

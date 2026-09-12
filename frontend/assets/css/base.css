@@ -1,6 +1,16 @@
 /* Morfi Center — utilidades del sistema visual "Artesanal · Cocina de Olla"
    Fuente: documentacion/mockups/04_Artesanal_Organico.html (mockup aprobado). */
 
+/* Este archivo es el punto de entrada del build de producción de Tailwind
+   (02_Documento_Tecnico.md §15.6: "tailwindcss -i assets/css/base.css -o
+   assets/css/tailwind.css"). Sin estas 3 directivas, ese build no generaría
+   ninguna clase de Tailwind (bg-kraft, font-display, etc.) — solo nuestras
+   utilidades custom de más abajo. En dev (CDN de Tailwind) estas directivas
+   no hacen nada, así que no afectan ese modo. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .paper {
   background: #F6EFDD;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");

@@ -3,43 +3,71 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sandbox — base.css (T-0.4.1)</title>
+<title>Sandbox — base.css + tailwind.config (T-0.4.1 / T-0.4.2)</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Caveat:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { display:['Bricolage Grotesque','system-ui','sans-serif'], hand:['Caveat','cursive'], sans:['Inter','system-ui','sans-serif'] },
+    colors: { kraft:'#E9DFC9', cream:'#F6EFDD', bark:'#3B2E22', forest:'#2F5D3A', mustard:'#D69A2D', brick:'#B0472F' },
+  }}};
+</script>
 <link rel="stylesheet" href="../assets/css/base.css" />
 </head>
-<body class="bg-[#E9DFC9] p-8 font-sans text-[#3B2E22]">
+<body class="bg-kraft p-8 font-sans text-bark">
 
-<h1 class="mb-1 text-2xl font-bold">Utilidades del sistema — Artesanal · Cocina de Olla</h1>
-<p class="mb-8 text-sm text-black/50">T-0.4.1 · Página de prueba, no forma parte del producto final.</p>
+<h1 class="mb-1 font-display text-2xl font-bold">Utilidades del sistema — Artesanal · Cocina de Olla</h1>
+<p class="mb-8 text-sm text-bark/50">T-0.4.1 / T-0.4.2 · Página de prueba, no forma parte del producto final.</p>
+
+<section class="mb-10">
+  <h2 class="mb-2 font-semibold">Tipografías (display / hand / sans)</h2>
+  <p class="font-display text-2xl font-bold">Bricolage Grotesque — títulos y precios</p>
+  <p class="font-hand text-2xl text-brick">Caveat — acentos a mano</p>
+  <p class="font-sans">Inter — cuerpo y UI</p>
+</section>
+
+<section class="mb-10">
+  <h2 class="mb-2 font-semibold">Paleta (kraft / cream / bark / forest / mustard / brick)</h2>
+  <div class="flex flex-wrap gap-3 text-xs">
+    <div class="grid h-16 w-16 place-items-center rounded-lg bg-kraft text-bark">kraft</div>
+    <div class="grid h-16 w-16 place-items-center rounded-lg bg-cream text-bark">cream</div>
+    <div class="grid h-16 w-16 place-items-center rounded-lg bg-bark text-cream">bark</div>
+    <div class="grid h-16 w-16 place-items-center rounded-lg bg-forest text-cream">forest</div>
+    <div class="grid h-16 w-16 place-items-center rounded-lg bg-mustard text-bark">mustard</div>
+    <div class="grid h-16 w-16 place-items-center rounded-lg bg-brick text-cream">brick</div>
+  </div>
+</section>
 
 <section class="mb-10">
   <h2 class="mb-2 font-semibold">.paper</h2>
-  <div class="paper h-24 w-64 rounded-2xl border border-black/10"></div>
+  <div class="paper h-24 w-64 rounded-2xl border border-bark/10"></div>
 </section>
 
 <section class="mb-10 flex flex-wrap gap-8">
   <div>
     <h2 class="mb-2 font-semibold">.blob</h2>
-    <div class="blob h-24 w-24 bg-[#2F5D3A]/30"></div>
+    <div class="blob h-24 w-24 bg-forest/30"></div>
   </div>
   <div>
     <h2 class="mb-2 font-semibold">.blob2</h2>
-    <div class="blob2 h-24 w-24 bg-[#D69A2D]/30"></div>
+    <div class="blob2 h-24 w-24 bg-mustard/30"></div>
   </div>
 </section>
 
 <section class="mb-10">
   <h2 class="mb-2 font-semibold">.stamp</h2>
-  <div class="stamp inline-block rounded-md px-3 py-1 font-bold text-[#B0472F]">Plato del día</div>
+  <div class="stamp inline-block rounded-md px-3 py-1 font-display font-bold text-brick">Plato del día</div>
 </section>
 
 <section class="mb-10 w-72">
   <h2 class="mb-2 font-semibold">.tape + .dashed</h2>
-  <div class="relative mt-6 rounded-2xl border-2 border-dashed border-black/25 bg-[#F6EFDD] px-6 py-5">
+  <div class="relative mt-6 rounded-2xl border-2 border-dashed border-bark/25 bg-cream px-6 py-5">
     <span class="tape"></span>
     <p>Ticket de cuenta regresiva</p>
     <div class="dashed mt-3"></div>
-    <p class="mt-2 text-xs text-black/50">línea perforada</p>
+    <p class="mt-2 text-xs text-bark/50">línea perforada</p>
   </div>
 </section>
 
@@ -55,14 +83,14 @@
 
 <section class="mb-10">
   <h2 class="mb-2 font-semibold">.lift — pasá el mouse por la card</h2>
-  <div class="lift w-64 rounded-2xl border-2 border-black/10 bg-[#F6EFDD] p-4">
+  <div class="lift w-64 rounded-2xl border-2 border-bark/10 bg-cream p-4">
     Card de prueba — hover acá
   </div>
 </section>
 
 <section class="max-w-md">
   <h2 class="mb-2 font-semibold">prefers-reduced-motion</h2>
-  <p class="text-sm text-black/60">
+  <p class="text-sm text-bark/60">
     Con "reducir movimiento" activado en el sistema operativo, la card de
     arriba no debería desplazarse al pasar el mouse (solo queda estática).
   </p>
