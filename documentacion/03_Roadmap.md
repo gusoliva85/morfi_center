@@ -32,6 +32,22 @@ El frontend arranca en la **Fase 0** como HTML con el estilo aplicado y **sin fu
 
 **Solo el usuario aprueba.** Al recibir el OK, se marca `- [x]`. Si el usuario pide correcciones, la tarea vuelve a `- [ ]` / `- [~]` y se revisa (no se crea una tarea nueva).
 
+### Commit y despliegue por tarea aprobada
+
+El proyecto vive **siempre desplegado** (Vercel para el front, VPS Contabo para el back — ver Fase 0, Tema 0.7). El flujo por tarea es:
+
+```
+1. Se implementa la tarea (Lógica / Backend / Frontend según corresponda).
+2. El usuario la prueba (local, o ya en producción una vez montada la Fase 0).
+3. El usuario aprueba → se marca [x].
+4. Se hace un commit puntual de esa tarea (mensaje con su ID, ej. "feat(T-1.3.1): registro de usuarios").
+5. Se hace push a `master` → dispara el deploy automático:
+   - Vercel redeploya el frontend.
+   - El GitHub Action de `deploy-backend.yml` actualiza el backend en el VPS (pull + migración + reinicio del servicio).
+```
+
+No se agrupan varias tareas en un mismo commit. Una tarea `[Lógica]` o `[Backend]` (sin su `[Frontend]` todavía) también se commitea y despliega al aprobarse — no habrá cambio visible en pantalla hasta que llegue la tarea de Frontend de esa misma funcionalidad; eso es el ciclo normal del proyecto, no una falla del deploy.
+
 ### Identificador de tarea
 
 `T-<fase>.<tema>.<n>` — por ejemplo `T-1.3.2` = Fase 1, Tema 3, tarea 2.
@@ -39,7 +55,7 @@ Cada tarea indica: **capa** (`[Lógica]` / `[Backend]` / `[Frontend]` / `[Infra]
 
 ### Documentación por fase
 
-Cuando una fase queda **completa y aprobada**, se crea `documentacion/Fase 0X - <nombre>.md` explicando qué se hizo y cómo quedó implementado (versión final, con fragmentos de código), y se actualiza al cerrar cada tarea de esa fase. Los usuarios de prueba se registran en `documentacion/Usuarios.md`.
+Cuando una fase queda **completa y aprobada**, se crea `documentacion/Fases/Fase 0X - <nombre>.md` explicando, con código y en palabras, qué se hizo y cómo quedó implementado (versión final, sin necesidad de detallar cada corrección intermedia), y se actualiza al cerrar cada tarea de esa fase. Los usuarios de prueba se registran en `documentacion/Usuarios.md`.
 
 ### Alcance
 
@@ -51,9 +67,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 | Fase | Nombre | Objetivo |
 |---|---|---|
-| 0 | Andamiaje y base visual | Repos, esqueleto backend, DB, home con estilo, tooling |
+| 0 | Andamiaje y base visual | Repos, esqueleto backend, DB, home con estilo, tooling, despliegue (Vercel + VPS Contabo) |
 | 1 | Usuarios, roles y autenticación | Registro, login local + Google, RBAC, perfil, admin de usuarios |
-| 2 | Configuración del sistema y turnos | `system_settings`, turnos, jobs de turno, countdown en el home |
+| 2 | Configuración del sistema y turnos | `system_settings`, turnos (resueltos bajo demanda, sin jobs), countdown en el home |
 | 3 | Catálogo: categorías y productos | CRUD admin + menú del cliente |
 | 4 | Stock | Disponibilidad, reservas con vencimiento, "sin stock" |
 | 5 | Promociones y Plato del Día | Precio vigente, bloque destacado |
@@ -74,115 +90,152 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 # FASE 0 · Andamiaje y base visual
 
-> Deja el proyecto listo para trabajar: estructura de carpetas, backend que responde, base de datos con migraciones, home del cliente con el estilo Artesanal · Cocina de Olla (sin lógica), y el `iniciar.bat`.
+> Deja el proyecto listo para trabajar: estructura de carpetas, backend que responde, base de datos con migraciones, home del cliente con el estilo Artesanal · Cocina de Olla (sin lógica), y la infraestructura de despliegue (Vercel para el front, VPS Contabo para el back y la base de datos).
 
 ## Tema 0.1 · Estructura del repositorio
 
-- [x] **T-0.1.1 · [Infra] Crear el árbol de carpetas del proyecto**
-  Crear `backend/app/{core,db,models,schemas,repositories,services,services/external,api,api/routes,jobs}`, `backend/{alembic,tests,data,storage/payment_proofs}`, `frontend/{pages/{auth,cliente,admin,delivery},partials,assets/{css,js,js/pages,img}}`. Agregar `.gitkeep` en las vacías.
+- [~] **T-0.1.1 · [Infra] Crear el árbol de carpetas del proyecto**
+  Crear `backend/app/{core,db,models,schemas,repositories,services,services/external,api,api/routes}`, `backend/tests/{unit,api}`, `backend/data`, `backend/storage/payment_proofs`, `frontend/{pages/{auth,cliente,admin,delivery},partials,assets/{css,js,js/pages,img}}`, `documentacion/Fases`, `deploy`, `.github/workflows`. Agregar `.gitkeep` en las vacías. `backend/alembic/` no se crea acá: lo genera `alembic init` en T-0.3.3 (crearlo antes rompería ese comando). No se crea `backend/app/jobs/`: el proyecto no tiene procesos de fondo (ver `02_Documento_Tecnico.md §10`) — la mención a `jobs` en versiones anteriores de esta tarea era un resabio de antes de esa decisión.
   _Prueba:_ el árbol coincide con `02_Documento_Tecnico.md §4`. _Depende de:_ —
 
-- [x] **T-0.1.2 · [Infra] `.gitignore` y archivos raíz**
+- [ ] **T-0.1.2 · [Infra] `.gitignore` y archivos raíz**
   `.gitignore` con `backend/data/`, `backend/storage/`, `backend/.env`, `__pycache__/`, `*.pyc`, `.venv/`, `frontend/assets/css/tailwind.css`. Crear `README.md` mínimo del proyecto.
   _Prueba:_ `git status` no lista datos ni entorno. _Depende de:_ T-0.1.1
 
-- [x] **T-0.1.3 · [Infra] `requirements.txt` y `pyproject.toml`**
-  `requirements.txt`: fastapi, uvicorn[standard], sqlalchemy, alembic, pydantic, pydantic-settings, passlib[bcrypt], pyjwt, authlib, httpx, apscheduler, python-multipart, slowapi. `pyproject.toml` con config de ruff, black (line 100) y pytest.
+- [ ] **T-0.1.3 · [Infra] `requirements.txt` y `pyproject.toml`**
+  `requirements.txt`: fastapi, uvicorn[standard], sqlalchemy, alembic, pydantic, pydantic-settings, passlib[bcrypt], pyjwt, authlib, httpx, python-multipart, slowapi. `pyproject.toml` con config de ruff, black (line 100) y pytest.
   _Prueba:_ `pip install -r requirements.txt` sin errores en un venv limpio. _Depende de:_ T-0.1.1
+  > **Nota (Fase 2):** originalmente incluía `apscheduler` — se sacó al decidir que turnos y reservas se resuelven bajo demanda, sin tareas programadas (ver `02_Documento_Tecnico.md` §10).
 
 ## Tema 0.2 · Esqueleto del backend
 
-- [x] **T-0.2.1 · [Backend] `core/config.py` — Settings**
+- [ ] **T-0.2.1 · [Backend] `core/config.py` — Settings**
   `Settings(BaseSettings)` con las variables de `02_Documento_Tecnico.md §19` (APP_ENV, APP_TIMEZONE, DATABASE_URL, JWT_*, GOOGLE_*, GEOCODING_*, STORAGE_DIR, etc.). Exponer `settings` singleton. Crear `backend/.env.example`.
   _Prueba:_ `python -c "from app.core.config import settings; print(settings.app_name)"`. _Depende de:_ T-0.1.3
 
-- [x] **T-0.2.2 · [Backend] `core/enums.py`**
+- [ ] **T-0.2.2 · [Backend] `core/enums.py`**
   Todos los enums de `02_Documento_Tecnico.md §7` como `class X(str, Enum)`.
   _Prueba:_ test que importa y verifica valores. _Depende de:_ T-0.1.1
 
-- [x] **T-0.2.3 · [Backend] `core/errors.py` — excepciones de dominio + handlers**
+- [ ] **T-0.2.3 · [Backend] `core/errors.py` — excepciones de dominio + handlers**
   `DomainError` base y subclases (`NotFoundError`, `ForbiddenError`, `ConflictError`, `OutOfStockError`, `ShiftClosedError`, `CancelWindowClosedError`, `OutOfCoverageError`, `InvalidTransitionError`). Handler global que las mapea al formato `{"error":{"code","message","details"}}` (§20).
   _Prueba:_ test de API que fuerza un `NotFoundError` y valida el JSON y el status. _Depende de:_ T-0.2.1
 
-- [x] **T-0.2.4 · [Backend] `core/logging.py` y middleware de `request_id`**
+- [ ] **T-0.2.4 · [Backend] `core/logging.py` y middleware de `request_id`**
   Logging stdlib; en `production` formato JSON. Middleware que asigna `X-Request-Id` y lo agrega a los logs.
   _Prueba:_ una request devuelve header `X-Request-Id` y aparece en el log. _Depende de:_ T-0.2.1
 
-- [x] **T-0.2.5 · [Backend] `core/timezone.py`**
+- [ ] **T-0.2.5 · [Backend] `core/timezone.py`**
   Helpers `now_utc()`, `to_local(dt)`, `resolve_shift_instant(date, "HH:MM")` usando `zoneinfo` y `APP_TIMEZONE`.
   _Prueba:_ tests: `resolve_shift_instant("2026-09-10","12:00")` da el instante UTC correcto para Buenos Aires. _Depende de:_ T-0.2.1
 
-- [x] **T-0.2.6 · [Backend] `main.py` — app FastAPI + healthcheck**
-  Crea la app, registra handlers de error, middleware de `request_id`, CORS (dev: `FRONTEND_ORIGIN`), prefija routers en `/api/v1`. Endpoint `GET /api/v1/health` → `{"status":"ok","env":...}`. `lifespan` preparado para el scheduler (vacío por ahora).
+- [ ] **T-0.2.6 · [Backend] `main.py` — app FastAPI + healthcheck**
+  Crea la app, registra handlers de error, middleware de `request_id`, CORS (dev: `FRONTEND_ORIGIN`), prefija routers en `/api/v1`. Endpoint `GET /api/v1/health` → `{"status":"ok","env":...}`. `lifespan` mínimo (arranque/apagado, sin scheduler — ver nota de Fase 2 en `Tema 2.3`).
   _Prueba:_ `uvicorn app.main:app` y `GET /api/v1/health` responde 200. `GET /api/docs` abre Swagger. _Depende de:_ T-0.2.3, T-0.2.4
 
 ## Tema 0.3 · Base de datos y migraciones
 
-- [x] **T-0.3.1 · [Backend] `db/session.py` — engine SQLite + PRAGMAs**
+- [ ] **T-0.3.1 · [Backend] `db/session.py` — engine SQLite + PRAGMAs**
   `create_engine(settings.database_url, connect_args={"check_same_thread": False})`, listener que aplica `PRAGMA foreign_keys=ON`, `journal_mode=WAL`, `busy_timeout=5000`. `SessionLocal` y `get_session()` (commit/rollback/close). Crea `backend/data/` si falta.
   _Prueba:_ script que abre sesión y ejecuta `PRAGMA foreign_keys` → `1`. _Depende de:_ T-0.2.1
 
-- [x] **T-0.3.2 · [Backend] `db/base.py` — DeclarativeBase**
+- [ ] **T-0.3.2 · [Backend] `db/base.py` — DeclarativeBase**
   `class Base(DeclarativeBase): ...` con convención de nombres de constraints/índices. Módulo que importa todos los modelos (se irá completando fase a fase).
   _Prueba:_ importar `Base` sin errores. _Depende de:_ T-0.3.1
 
-- [x] **T-0.3.3 · [Infra] Alembic init y `env.py` conectado a Settings**
+- [ ] **T-0.3.3 · [Infra] Alembic init y `env.py` conectado a Settings**
   `alembic init alembic`; ajustar `env.py` para tomar `settings.database_url` y `Base.metadata`, `render_as_batch=True` (SQLite). `alembic.ini` sin URL hardcodeada.
   _Prueba:_ `alembic revision -m "baseline"` y `alembic upgrade head` sin errores (aún sin tablas). _Depende de:_ T-0.3.2
 
-- [x] **T-0.3.4 · [Backend] `db/seed.py` — esqueleto idempotente**
+- [ ] **T-0.3.4 · [Backend] `db/seed.py` — esqueleto idempotente**
   Función `run_seed(session)` vacía pero ejecutable vía `python -m app.db.seed`. Se completa en cada fase.
   _Prueba:_ `python -m app.db.seed` termina sin error. _Depende de:_ T-0.3.1
 
 ## Tema 0.4 · Frontend — base visual (sin funcionalidad)
 
-> Nota: el estilo cambió a **"Artesanal · Cocina de Olla"** (`mockups/04_Artesanal_Organico.html`).
-> T-0.4.1 a T-0.4.3 se rehicieron con el nuevo sistema y vuelven a revisión.
+> Nota (histórico de la decisión de estilo): la elección original del proyecto fue `01_Editorial_Premium.html`. El 2026-09-10 se migró a **"Artesanal · Cocina de Olla"** (`mockups/04_Artesanal_Organico.html`), que es el estilo **confirmado y vigente**. El 2026-09-11, al retomar el proyecto en un chat nuevo, hubo una confusión momentánea que revirtió por error toda la documentación a Editorial Premium; se corrigió el mismo día y quedó definitivamente en **Artesanal · Cocina de Olla**. Además, el código de `backend/` y `frontend/` (Fases 0-2) se reinició desde cero, por lo que todas las tareas de Fases 0-2 vuelven a `[ ]` y se re-implementan y re-validan contra el sistema Artesanal · Cocina de Olla.
 
-- [x] **T-0.4.1 · [Frontend] `assets/css/base.css` — utilidades del sistema**
+- [ ] **T-0.4.1 · [Frontend] `assets/css/base.css` — utilidades del sistema**
   Declarar `.paper`, `.blob`/`.blob2`, `.stamp`, `.tape`, `.dashed`, `.lift`, `.foodA..D` y el media query de `prefers-reduced-motion` (según skill `morfi-frontend`).
   _Prueba:_ una página de test muestra las utilidades y una card con hover `.lift`. _Depende de:_ —
 
-- [x] **T-0.4.2 · [Frontend] `tailwind.config.js` + carga de fuentes**
+- [ ] **T-0.4.2 · [Frontend] `tailwind.config.js` + carga de fuentes**
   Tokens (`kraft/cream/bark/forest/mustard/brick`), `fontFamily` display=Bricolage Grotesque / hand=Caveat / sans=Inter, `content` con html y js. Link a Google Fonts. En dev se admite el CDN de Tailwind.
   _Prueba:_ el texto renderiza con las 3 fuentes y los colores del token aplican. _Depende de:_ —
 
-- [x] **T-0.4.3 · [Frontend] Parciales base: `header`, `bottom-nav`, `top-nav`, `cart-bar`**
+- [ ] **T-0.4.3 · [Frontend] Parciales base: `header`, `bottom-nav`, `top-nav`, `cart-bar`**
   HTML de los parciales en `frontend/partials/` según las recetas de la skill. `assets/js/ui.js` con `injectPartials()` (fetch + innerHTML) y helpers (`$`, `toast`).
   _Prueba:_ una página incluye los parciales vía `ui.js` y se ven bien en móvil y escritorio. _Depende de:_ T-0.4.2
 
-- [x] **T-0.4.4 · [Frontend] `index.html` — Home del cliente (solo estilo)**
+- [ ] **T-0.4.4 · [Frontend] `index.html` — Home del cliente (solo estilo)**
   Portar el mockup `04_Artesanal_Organico.html` a la estructura real: header + nav adaptativa, chip de estado, countdown (ticket de kraft, estático), Plato del Día (sello), promos, chips de categoría, lista de productos con un ítem "sin stock", panel de dirección, barra de carrito, bottom nav. **Todo con datos hardcodeados**, sin fetch.
   _Prueba:_ a 360px se ve la versión móvil con bottom nav; a 1440px el layout cambia (nav arriba, grilla, sin elementos estirados). _Depende de:_ T-0.4.3
 
-- [x] **T-0.4.5 · [Frontend] `assets/js/format.js`**
+- [ ] **T-0.4.5 · [Frontend] `assets/js/format.js`**
   `formatMoney(cents)` → `$00.000`, `formatDate`, `formatTime`, `pad2`.
   _Prueba:_ tests manuales en consola: `formatMoney(3180000) === "$31.800"`. _Depende de:_ —
 
-- [x] **T-0.4.6 · [Frontend] `assets/js/api.js` y `auth.js` (esqueleto)**
+- [ ] **T-0.4.6 · [Frontend] `assets/js/api.js` y `auth.js` (esqueleto)**
   `api.js` con el wrapper de `fetch` (baseURL, token en memoria, `tryRefresh`, `ApiError`) y `auth.js` con `setToken`/`bootstrapSession` (todavía sin backend de auth). Documentar `window.__MC_API__`.
   _Prueba:_ `api.get('/health')` desde la consola del navegador devuelve el JSON del backend. _Depende de:_ T-0.2.6, T-0.4.2
 
-## Tema 0.5 · Tooling y arranque
+## Tema 0.5 · Tooling
 
-- [x] **T-0.5.1 · [Infra] `iniciar.bat`**
-  Script en la raíz que: (1) crea el venv si falta, (2) instala `requirements.txt`, (3) corre `alembic upgrade head` + `python -m app.db.seed`, (4) levanta el backend (`uvicorn ... :8000`), (5) levanta el frontend (`python -m http.server 5500 --directory frontend`), (6) abre `http://localhost:5500` en el navegador. *(Ya creado; se ajusta si cambia la estructura.)*
-  _Prueba:_ doble clic → backend en :8000, front en :5500, navegador abierto en el home. _Depende de:_ T-0.2.6, T-0.4.4
-  > **Nota (Fase 2):** se eliminó al pivotear a despliegue en producción — el proyecto deja de pensarse como "correr local con un doble clic". El desarrollo local ahora se arranca a mano (ver `README.md`).
+> **Nota:** este tema tenía una tarea `T-0.5.1` para un script `iniciar.bat`. Se descartó definitivamente al pivotear a despliegue en producción (Vercel + VPS): el proyecto deja de pensarse como "correr local con un doble clic". El desarrollo local se arranca a mano (§24.2 del Documento Técnico, documentado en el `README.md`); el despliegue real es la nueva Tema 0.7 de esta fase.
 
-- [~] **T-0.5.2 · [Infra] `pytest` configurado + `conftest.py` base**
+- [ ] **T-0.5.2 · [Infra] `pytest` configurado + `conftest.py` base**
   `conftest.py` con fixtures `session` (SQLite en memoria + `create_all`) y `client` (`httpx.AsyncClient` con override de `get_session`).
   _Prueba:_ `pytest` corre (0 tests o 1 test dummy de `/health`) en verde. _Depende de:_ T-0.3.2, T-0.2.6
 
 ## Tema 0.6 · Documentación viva
 
-- [~] **T-0.6.1 · [Docs] `documentacion/Usuarios.md`**
+- [ ] **T-0.6.1 · [Docs] `documentacion/Usuarios.md`**
   Archivo de usuarios de prueba (tabla rol / email / password / notas). *(Ya creado; se completa cuando el seed de la Fase 1 los genere.)*
   _Prueba:_ el archivo existe y está enlazado desde este roadmap. _Depende de:_ —
 
-- [x] **T-0.6.2 · [Docs] Plantilla `Fase 0X - <nombre>.md`**
-  Definir el esqueleto que tendrán los documentos de cierre de fase (objetivo, temas, qué se hizo, cómo quedó, fragmentos de código, cómo probar).
+- [ ] **T-0.6.2 · [Docs] Plantilla `Fase 0X - <nombre>.md`**
+  Definir el esqueleto que tendrán los documentos de cierre de fase (objetivo, temas, qué se hizo y cómo quedó explicado con código y en palabras, cómo probar), guardados en `documentacion/Fases/`.
   _Prueba:_ plantilla acordada con el usuario. _Depende de:_ —
+
+## Tema 0.7 · Despliegue: Vercel (frontend) + VPS Contabo (backend y base de datos)
+
+> El VPS ya está contratado (Contabo, 4 vCPU / 8 GB RAM / 100 GB, plan anual). No se documentan credenciales reales en ningún archivo del repo: acceso SSH por clave pública/privada, y todo secreto vive en `backend/.env` únicamente dentro del servidor. Runbook completo (sin credenciales) en `deploy/DEPLOY.md`.
+
+- [ ] **T-0.7.1 · [Infra] Alta y hardening inicial del VPS Contabo**
+  Usuario no-root dedicado con sudo; acceso SSH solo por clave pública/privada (deshabilitar login por contraseña); firewall `ufw` abierto solo a 22/80/443; actualizaciones del sistema.
+  _Prueba:_ login SSH por clave funciona; login por contraseña rechazado; `ufw status` muestra solo los puertos esperados. _Depende de:_ —
+
+- [ ] **T-0.7.2 · [Infra] Stack del servidor**
+  Instalar Python 3.11+, `venv`, Nginx y Certbot en el VPS. Clonar el repositorio en el servidor (solo lectura de despliegue, sin credenciales de escritura innecesarias).
+  _Prueba:_ `python3 --version`, `nginx -v` y `certbot --version` responden en el servidor. _Depende de:_ T-0.7.1
+
+- [ ] **T-0.7.3 · [Infra] Servicio `systemd` + Nginx reverse proxy + HTTPS**
+  `deploy/morficenter-api.service` corriendo Uvicorn con reinicio automático; `deploy/nginx.morficenter.conf` como reverse proxy hacia Uvicorn; certificado HTTPS con Certbot.
+  _Prueba:_ `systemctl status morficenter-api` en verde; `https://<host-contabo>/api/v1/health` responde 200 con candado válido. _Depende de:_ T-0.7.2, T-0.2.6
+
+- [ ] **T-0.7.4 · [Infra] Primer deploy del backend al VPS**
+  Traer el código al servidor (git pull o rsync), `venv` + `requirements.txt`, `backend/.env` real cargado a mano en el servidor, `alembic upgrade head`, `python -m app.db.seed`.
+  _Prueba:_ el healthcheck responde en producción con datos semilla cargados. _Depende de:_ T-0.7.3
+
+- [ ] **T-0.7.5 · [Infra] Proyecto en Vercel + primer deploy del frontend**
+  Conectar el repositorio a Vercel; configurar el *build command* del front (Tailwind) o commitear `tailwind.css` ya generado; `window.__MC_API__` apuntando a la URL pública del backend en el VPS.
+  _Prueba:_ la URL de Vercel sirve el home con estilo; las llamadas a `/health` desde la consola del navegador llegan al backend del VPS. _Depende de:_ T-0.7.4, T-0.4.4
+
+- [ ] **T-0.7.6 · [Backend] CORS y cookies cross-site en producción**
+  `FRONTEND_ORIGIN` = URL real de Vercel; `allow_origins=[FRONTEND_ORIGIN]` + `allow_credentials=True`; cookie de refresh con `SameSite=None; Secure` en producción (ver `02_Documento_Tecnico.md §17`).
+  _Prueba:_ login desde el front en Vercel contra el backend del VPS deja la cookie de refresh y `/auth/refresh` funciona entre los dos dominios. _Depende de:_ T-0.7.5, T-1.4.2
+
+- [ ] **T-0.7.7 · [Infra] Backups automáticos**
+  Cron diario en el VPS que copia `backend/data/morfi.db` y `backend/storage/payment_proofs/` a otro destino (otro directorio del disco como mínimo; almacenamiento externo cuando se defina).
+  _Prueba:_ tras forzar la corrida del cron, aparece una copia nueva con timestamp. _Depende de:_ T-0.7.4
+
+- [ ] **T-0.7.8 · [Infra] Despliegue continuo del backend (GitHub Actions → VPS)**
+  `.github/workflows/deploy-backend.yml`: en cada push a `master`, se conecta por SSH al VPS (usando `secrets.VPS_HOST`, `secrets.VPS_USER`, `secrets.VPS_SSH_KEY` cargados por el usuario en GitHub → *Settings → Secrets and variables → Actions*, nunca en el repo) y ejecuta `git pull`, instala dependencias si cambiaron, `alembic upgrade head` y reinicia `systemctl restart morficenter-api`. El front no necesita este paso: Vercel ya redeploya solo al conectarlo al repositorio (T-0.7.5).
+  _Prueba:_ un push a `master` con un cambio trivial en el backend se ve reflejado en `https://<host-contabo>/api/v1/health` sin tocar el servidor a mano. _Depende de:_ T-0.7.4
+
+- [ ] **T-0.7.9 · [Docs] Runbook `deploy/DEPLOY.md`**
+  Pasos reproducibles de todo lo anterior, sin ninguna credencial real (IP, usuarios y contraseñas quedan fuera del repo). Checklist de accesos necesarios para retomar el despliegue desde cero (incluye qué secretos cargar en GitHub Actions y dónde).
+  _Prueba:_ siguiendo el runbook al pie de la letra (con datos propios) se puede reconstruir el despliegue en un VPS nuevo. _Depende de:_ T-0.7.1 a T-0.7.8
 
 ---
 
@@ -192,135 +245,135 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.1 · Modelo y lógica de usuarios
 
-- [x] **T-1.1.1 · [Lógica] Reglas de validación de usuario**
+- [ ] **T-1.1.1 · [Lógica] Reglas de validación de usuario**
   `UserService` (puro): validar email (formato + unicidad delegada al repo), teléfono opcional, nombre/apellido requeridos, política de contraseña (mínimo 8, al menos una letra y un número). Funciones `normalize_email`, `validate_password`.
   _Prueba:_ tests unitarios de cada regla (válidos e inválidos). _Depende de:_ T-0.2.2
 
-- [x] **T-1.1.2 · [Lógica] Hash y verificación de contraseñas**
+- [ ] **T-1.1.2 · [Lógica] Hash y verificación de contraseñas**
   `core/security.py`: `hash_password`, `verify_password` con passlib/bcrypt (coste ≥ 12).
   _Prueba:_ test: `verify_password(p, hash_password(p))` True; contraseña distinta False; el hash no es el texto plano. _Depende de:_ T-0.1.3
 
-- [x] **T-1.1.3 · [Lógica] Emisión y verificación de JWT**
+- [ ] **T-1.1.3 · [Lógica] Emisión y verificación de JWT**
   `core/security.py`: `create_access_token(user)` (15 min, claims `sub`,`role`,`type=access`), `create_refresh_token(user)` (7 días, `jti`,`type=refresh`), `decode_token`. Errores claros para expirado/inválido.
   _Prueba:_ tests: token válido decodifica; token expirado y firma inválida lanzan el error esperado. _Depende de:_ T-0.2.1
 
 ## Tema 1.2 · Persistencia de usuarios
 
-- [x] **T-1.2.1 · [Backend] Modelos `User`, `UserAuthProvider`, `UserProfile`**
+- [ ] **T-1.2.1 · [Backend] Modelos `User`, `UserAuthProvider`, `UserProfile`**
   SQLAlchemy según `02_Documento_Tecnico.md §6.1`. Timestamps UTC automáticos.
   _Prueba:_ crear un `User` en una sesión de test y releerlo. _Depende de:_ T-0.3.2, T-1.1.1
 
-- [x] **T-1.2.2 · [Backend] Modelos `Cart` y `CustomerBalance` (vacíos, para el alta)**
+- [ ] **T-1.2.2 · [Backend] Modelos `Cart` y `CustomerBalance` (vacíos, para el alta)**
   Se crean junto al usuario CUSTOMER (aunque su lógica llegue en Fases 6 y 12). Solo tabla + relación.
   _Prueba:_ al persistir un usuario CUSTOMER de test, existen su cart y su balance en 0. _Depende de:_ T-1.2.1
 
-- [x] **T-1.2.3 · [Backend] Migración Alembic de la Fase 1**
+- [ ] **T-1.2.3 · [Backend] Migración Alembic de la Fase 1**
   `alembic revision --autogenerate -m "fase1 usuarios"`; revisar el script; `upgrade head`.
   _Prueba:_ `alembic upgrade head` y `downgrade -1` limpios; las tablas existen en `morfi.db`. _Depende de:_ T-1.2.2
 
-- [x] **T-1.2.4 · [Backend] `UserRepository`**
+- [ ] **T-1.2.4 · [Backend] `UserRepository`**
   `get_by_email`, `get_by_id`, `create`, `list(role=None, page, page_size)`, `get_provider(provider, uid)`, `link_provider`.
   _Prueba:_ tests de cada método contra la DB de test. _Depende de:_ T-1.2.3
 
 ## Tema 1.3 · Registro (cuenta propia)
 
-- [x] **T-1.3.1 · [Lógica] `AuthService.register`**
+- [ ] **T-1.3.1 · [Lógica] `AuthService.register`**
   Recibe datos validados → normaliza email → verifica que no exista → hashea contraseña → crea `User(role=CUSTOMER)` + `UserAuthProvider(local)` + `Cart` + `CustomerBalance`. Devuelve el usuario. Lanza `ConflictError` si el email existe.
   _Prueba:_ test unitario con repo real: alta OK; alta duplicada → `ConflictError`. _Depende de:_ T-1.2.4, T-1.1.2
 
-- [x] **T-1.3.2 · [Backend] `POST /api/v1/auth/register`**
+- [ ] **T-1.3.2 · [Backend] `POST /api/v1/auth/register`**
   Schema `RegisterIn` (first_name, last_name, email, phone?, password). Llama a `AuthService.register`. Devuelve 201 con el usuario (sin datos sensibles) y ya emite tokens (login automático).
   _Prueba:_ test de API: 201 + cookie de refresh + `access_token`; email repetido → 409 con `code: CONFLICT`. _Depende de:_ T-1.3.1, T-1.1.3
 
 ## Tema 1.4 · Login local + sesión
 
-- [x] **T-1.4.1 · [Lógica] `AuthService.authenticate`**
+- [ ] **T-1.4.1 · [Lógica] `AuthService.authenticate`**
   Email + password → busca usuario → `verify_password` → valida `status=ACTIVE` → devuelve usuario o lanza `ForbiddenError`/`NotAuthenticated` (mensaje genérico "credenciales inválidas" para no filtrar existencia).
   _Prueba:_ tests: credenciales OK; password mala; usuario suspendido. _Depende de:_ T-1.2.4, T-1.1.2
 
-- [x] **T-1.4.2 · [Backend] `POST /api/v1/auth/login`**
+- [ ] **T-1.4.2 · [Backend] `POST /api/v1/auth/login`**
   Devuelve `{access_token, token_type, expires_in, user}` y `Set-Cookie: mc_refresh` (httpOnly, SameSite=Lax, Path acotado, Secure en prod).
   _Prueba:_ test de API: login OK setea cookie y token; login inválido → 401. _Depende de:_ T-1.4.1, T-1.1.3
 
-- [x] **T-1.4.3 · [Backend] `POST /api/v1/auth/refresh`**
+- [ ] **T-1.4.3 · [Backend] `POST /api/v1/auth/refresh`**
   Lee la cookie, valida el refresh (tipo + expiración + no revocado), rota el `jti`, emite nuevo access (+ nueva cookie).
   _Prueba:_ test: con cookie válida → nuevo access; sin cookie → 401; refresh ya rotado → 401. _Depende de:_ T-1.4.2
 
-- [x] **T-1.4.4 · [Backend] `POST /api/v1/auth/logout`**
+- [ ] **T-1.4.4 · [Backend] `POST /api/v1/auth/logout`**
   Revoca el refresh (tabla `revoked_tokens` o marca de rotación) y borra la cookie.
   _Prueba:_ test: tras logout, `refresh` con esa cookie → 401. _Depende de:_ T-1.4.3
 
-- [x] **T-1.4.5 · [Backend] Rate limiting en auth**
+- [ ] **T-1.4.5 · [Backend] Rate limiting en auth**
   `slowapi` en `/auth/login`, `/auth/register`, `/auth/password/*` (p. ej. 10/min por IP).
   _Prueba:_ test: la petición 11 en un minuto → 429 `TOO_MANY_REQUESTS`. _Depende de:_ T-1.4.2
 
 ## Tema 1.5 · Autorización (RBAC)
 
-- [x] **T-1.5.1 · [Backend] `api/deps.py` — `get_current_user`**
+- [ ] **T-1.5.1 · [Backend] `api/deps.py` — `get_current_user`**
   Extrae el Bearer, decodifica, carga `User`, valida `ACTIVE`. Lanza 401 si falla.
   _Prueba:_ endpoint protegido de test: con token válido 200, sin token 401, token expirado 401. _Depende de:_ T-1.1.3, T-1.2.4
 
-- [x] **T-1.5.2 · [Backend] `require_role(*roles)`**
+- [ ] **T-1.5.2 · [Backend] `require_role(*roles)`**
   Dependencia que corta con 403 si `user.role` no está en `roles`.
   _Prueba:_ endpoint `require_role(ADMIN)`: admin 200, customer 403. _Depende de:_ T-1.5.1
 
-- [x] **T-1.5.3 · [Backend] `GET /api/v1/auth/me`**
+- [ ] **T-1.5.3 · [Backend] `GET /api/v1/auth/me`**
   Devuelve `{id, first_name, last_name, email, phone, role, balance}` del usuario actual.
   _Prueba:_ test: con token de cada rol devuelve sus datos. _Depende de:_ T-1.5.1
 
 ## Tema 1.6 · Perfil
 
-- [x] **T-1.6.1 · [Lógica + Backend] Editar perfil**
+- [ ] **T-1.6.1 · [Lógica + Backend] Editar perfil**
   `UserService.update_profile(user, {first_name?, last_name?, phone?})` con validación. `PATCH /api/v1/users/me/profile`.
   _Prueba:_ test: cambia teléfono y persiste; email no editable por este endpoint. _Depende de:_ T-1.5.1
 
 ## Tema 1.7 · Gestión de usuarios por admin
 
-- [x] **T-1.7.1 · [Lógica + Backend] Crear ADMIN / DELIVERY**
+- [ ] **T-1.7.1 · [Lógica + Backend] Crear ADMIN / DELIVERY**
   `UserService.create_staff(role, datos)` (sin auto-login, con contraseña temporal o definida). `POST /api/v1/users` (`require_role(ADMIN)`). Para DELIVERY crea también `UserProfile` con `vehicle_type`, `capacity`.
   _Prueba:_ test: admin crea un delivery; customer intentándolo → 403. _Depende de:_ T-1.5.2
 
-- [x] **T-1.7.2 · [Backend] Listar y editar usuarios (admin)**
+- [ ] **T-1.7.2 · [Backend] Listar y editar usuarios (admin)**
   `GET /api/v1/users?role=&page=` y `PATCH /api/v1/users/{id}` (rol, `status`). Auditar cambios de rol/estado en `audit_log` (modelo mínimo si no existe aún).
   _Prueba:_ test: listado filtra por rol; suspender un usuario le impide loguearse. _Depende de:_ T-1.7.1
 
 ## Tema 1.8 · Login con Google
 
-- [x] **T-1.8.1 · [Backend] Cliente OAuth con Authlib**
+- [ ] **T-1.8.1 · [Backend] Cliente OAuth con Authlib**
   Registrar el proveedor Google (OIDC) con `GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI`. `GET /api/v1/auth/google/login` → redirección con `state` + PKCE.
   _Prueba:_ el endpoint redirige a `accounts.google.com` con los params correctos. _Depende de:_ T-0.2.1
 
-- [x] **T-1.8.2 · [Lógica + Backend] Callback y vinculación**
+- [ ] **T-1.8.2 · [Lógica + Backend] Callback y vinculación**
   `GET /auth/google/callback`: valida `id_token`, obtiene `sub`/`email`/nombre. `AuthService.login_with_google`: si existe provider→login; si existe email→vincula; si no→crea CUSTOMER (`password_hash=NULL`) + cart + balance. Emite tokens y redirige al front.
   _Prueba:_ tests con `id_token` mockeado: los tres caminos (nuevo, vincula, login). _Depende de:_ T-1.8.1, T-1.3.1
 
 ## Tema 1.9 · Recuperación de contraseña
 
-- [x] **T-1.9.1 · [Lógica + Backend] Solicitar y resetear**
+- [ ] **T-1.9.1 · [Lógica + Backend] Solicitar y resetear**
   `POST /auth/password/forgot` (genera token temporal firmado, 30 min; en dev lo loguea en consola en vez de mail). `POST /auth/password/reset` (token + nueva contraseña). Respuesta siempre 200 (no revela si el email existe).
   _Prueba:_ test: flujo completo cambia la contraseña; token vencido → 400. _Depende de:_ T-1.1.2, T-1.1.3
 
 ## Tema 1.10 · Seed y usuarios de prueba
 
-- [x] **T-1.10.1 · [Backend + Docs] Seed de usuarios base**
+- [ ] **T-1.10.1 · [Backend + Docs] Seed de usuarios base**
   `db/seed.py` crea (idempotente) admin, cliente y delivery de prueba. Registrar credenciales en `documentacion/Usuarios.md`.
   _Prueba:_ `python -m app.db.seed` deja los 3 usuarios; correr dos veces no duplica. _Depende de:_ T-1.3.1, T-1.7.1
 
 ## Tema 1.11 · Frontend de autenticación
 
-- [x] **T-1.11.1 · [Frontend] `pages/auth/login.html` + `assets/js/pages/login.js`**
+- [ ] **T-1.11.1 · [Frontend] `pages/auth/login.html` + `assets/js/pages/login.js`**
   Formulario (email, password) con estilo Artesanal · Cocina de Olla (inputs/labels/errores de la skill), botón "Iniciar sesión" y botón "Continuar con Google". Al enviar: `auth.login()` → si OK, redirige según rol (CUSTOMER→`/index.html`, ADMIN→`/pages/admin/dashboard.html`, DELIVERY→`/pages/delivery/inicio.html`). Muestra errores del backend.
   _Prueba:_ el usuario loguea con cada usuario de prueba y cae en la pantalla correcta; credenciales malas muestran el error. _Depende de:_ T-1.4.2, T-0.4.6
 
-- [x] **T-1.11.2 · [Frontend] `pages/auth/registro.html` + js**
+- [ ] **T-1.11.2 · [Frontend] `pages/auth/registro.html` + js**
   Formulario (nombre, apellido, email, teléfono, contraseña + repetir) con validación en vivo. Al registrar: alta + login automático + redirección al home.
   _Prueba:_ alta de un cliente nuevo entra directo al home logueado; email repetido muestra el mensaje. _Depende de:_ T-1.3.2
 
-- [x] **T-1.11.3 · [Frontend] `pages/auth/recuperar.html` + js**
+- [ ] **T-1.11.3 · [Frontend] `pages/auth/recuperar.html` + js**
   Paso 1: pedir email. Paso 2 (con `?token=`): nueva contraseña. Mensajes neutros.
   _Prueba:_ con el token que aparece en consola (dev) se completa el cambio y se puede loguear. _Depende de:_ T-1.9.1
 
-- [x] **T-1.11.4 · [Frontend] Sesión, guardas por rol y logout**
+- [ ] **T-1.11.4 · [Frontend] Sesión, guardas por rol y logout**
   `auth.js` ya define el mecanismo (implementado desde T-0.4.6); acá se **aplica** en todas las páginas, con dos patrones distintos según la pantalla (ver RF-USR-11/12 y RN-33 del documento general — **navegar el catálogo es público, actuar requiere sesión**):
   - **Página pública** (home, menú, producto, promociones): `bootstrapSession()` al cargar (sin redirigir) solo para saber si hay usuario y saludarlo; nunca bloquea el acceso a la pantalla.
   - **Página exclusiva de un rol** (todo `pages/admin/*`, `pages/delivery/*`, y del lado cliente `carrito`, `direccion`, `pago`, `pedidos`, `seguimiento`, `perfil`): `await requireRole(...)` al cargar — con rol → esa página; `requireRole()` sin argumento → "cualquier usuario logueado" (así se gatean las páginas de cliente sin atarlas a `CUSTOMER` específicamente). Si no hay sesión (o el rol no corresponde), redirige a `login.html?next=<pantalla actual>` y **al loguear vuelve ahí**.
@@ -329,21 +382,21 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Header con el nombre del usuario y "Cerrar sesión" cuando hay sesión (y "Ingresar" cuando no la hay, sin ocultar el resto del header).
   _Prueba:_ entrar a `carrito.html`/`perfil.html`/una página admin sin sesión redirige a login y, tras loguear, vuelve a esa misma pantalla; con sesión de cliente a una página admin también redirige; logout limpia y vuelve al inicio; la home y el menú se ven completos sin sesión. _Depende de:_ T-1.5.3, T-1.4.4
 
-- [x] **T-1.11.5 · [Frontend] `pages/cliente/perfil.html` + js** 🔒 requiere sesión
+- [ ] **T-1.11.5 · [Frontend] `pages/cliente/perfil.html` + js** 🔒 requiere sesión
   Ver y editar nombre/teléfono. Mostrar email (no editable) y rol. Placeholder de "Saldo a favor" y "Direcciones" (se completan en Fases 12 y 7). Gateada con `requireRole()` (T-1.11.4): sin sesión, redirige a login con retorno a `perfil.html`.
   _Prueba:_ el cliente cambia su teléfono y al recargar persiste; entrar sin sesión redirige a login. _Depende de:_ T-1.6.1, T-1.11.4
 
-- [x] **T-1.11.6 · [Frontend] `pages/admin/usuarios.html` + js**
+- [ ] **T-1.11.6 · [Frontend] `pages/admin/usuarios.html` + js**
   Tabla de usuarios con filtro por rol, alta de ADMIN/DELIVERY (formulario), y acciones de suspender/activar y cambiar rol. Layout de escritorio (tabla densa, no cards estiradas).
   _Prueba:_ el admin crea un repartidor y aparece en la lista; puede loguear con esas credenciales. _Depende de:_ T-1.7.2
 
-- [x] **T-1.11.7 · [Frontend] Home: integrar sesión (mínimo)**
+- [ ] **T-1.11.7 · [Frontend] Home: integrar sesión (mínimo)**
   El `index.html` deja de ser 100% estático solo en lo relativo a sesión: saluda al usuario, muestra el estado de login. **Sigue siendo pública** (nadie es redirigido por no tener sesión); **el resto sigue hardcodeado** hasta sus fases.
   _Prueba:_ logueado se ve el nombre; sin sesión, botón "Ingresar" — y la pantalla se ve igual de completa en ambos casos. _Depende de:_ T-1.11.4
 
 ## Cierre de fase
 
-- [x] **T-1.99 · [Docs] `Fase 01 - Usuarios, roles y autenticación.md`**
+- [ ] **T-1.99 · [Docs] `Fase 01 - Usuarios, roles y autenticación.md`**
   Documento final de la fase: qué se hizo, cómo quedó implementado (auth, JWT, RBAC, Google, front), fragmentos de código clave, cómo probar. Actualizar `Usuarios.md`.
 
 ---
@@ -354,29 +407,29 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 2.1 · `system_settings`
 
-- [x] **T-2.1.1 · [Backend] Modelo `SystemSetting` + `SettingsRepository`**
+- [ ] **T-2.1.1 · [Backend] Modelo `SystemSetting` + `SettingsRepository`**
   Tabla clave/valor JSON (§6.10). Repo con `get(key, default)`, `get_typed`, `set(key, value, actor)`.
   _Prueba:_ set/get de una clave JSON compleja (tiers de envío) ida y vuelta. _Depende de:_ T-0.3.2
 
-- [x] **T-2.1.2 · [Lógica] `SettingsService` con claves conocidas y defaults**
+- [ ] **T-2.1.2 · [Lógica] `SettingsService` con claves conocidas y defaults**
   Enum/constantes de claves (`SHIFT_DEFAULT`, `TIMEZONE`, `COVERAGE_MODE`, ...). `get_shift_default()`, `get_payment_transfer()`, etc., con defaults de `02_Documento_Tecnico.md §6.11`. Validación de forma por clave.
   _Prueba:_ tests: leer una clave sin valor devuelve el default; setear un valor con forma inválida → error. _Depende de:_ T-2.1.1
 
-- [x] **T-2.1.3 · [Backend] Endpoints de configuración (admin)**
+- [ ] **T-2.1.3 · [Backend] Endpoints de configuración (admin)**
   `GET /api/v1/settings` (todas), `PUT /api/v1/settings/{key}` con validación y `audit_log`.
   _Prueba:_ test: admin actualiza `payment.transfer`; customer → 403. _Depende de:_ T-2.1.2, T-1.5.2
 
-- [x] **T-2.1.4 · [Backend + Docs] Seed de `system_settings`**
+- [ ] **T-2.1.4 · [Backend + Docs] Seed de `system_settings`**
   `db/seed.py` inserta todas las claves con sus defaults.
   _Prueba:_ tras el seed, `GET /settings` devuelve el set completo. _Depende de:_ T-2.1.2
 
 ## Tema 2.2 · Turnos
 
-- [x] **T-2.2.1 · [Backend] Modelo `Shift` + `ShiftRepository`**
+- [ ] **T-2.2.1 · [Backend] Modelo `Shift` + `ShiftRepository`**
   Tabla `shifts` (§6.4). Repo: `get_current()`, `get_by_date_type`, `create_from_default`, `set_status`.
   _Prueba:_ crear un turno y recuperarlo por fecha/tipo. _Depende de:_ T-0.3.2
 
-- [~] **T-2.2.2 · [Lógica] `ShiftService` — resolución de instantes y estado**
+- [ ] **T-2.2.2 · [Lógica] `ShiftService` — resolución de instantes y estado**
   `resolve_window(shift)` → `(open_dt_utc, close_dt_utc, cancel_deadline_utc)` con `core/timezone`. `current_status(shift, now)` deriva `SCHEDULED/OPEN/CLOSED`. `is_ordering_open(now)`.
   _Prueba:_ tests con distintos "now": antes de apertura, dentro, después del cierre. _Depende de:_ T-2.2.1, T-0.2.5
 
@@ -385,18 +438,10 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   _Prueba:_ test: primera llamada crea, segunda no duplica; en día no operativo no crea. _Depende de:_ T-2.2.2, T-2.1.2
 
 - [ ] **T-2.2.4 · [Lógica] Transiciones de turno**
-  `open()`, `close()` (congela `product_stock` del turno — se integra en Fase 4), `to_production()`. Registradas con actor/sistema.
-  _Prueba:_ tests de cada transición y de las inválidas. _Depende de:_ T-2.2.2
+  `open()`/`close()` **no son un job**: se resuelven solas al calcular `current_status(shift, now)` (T-2.2.2) — no hay una transición que "correr", el estado siempre se deriva de la hora. Lo que sí necesita una acción explícita es `on_shift_closed(shift)`: el efecto de **una sola vez** al detectar el cierre (congela `product_stock` del turno — se integra en Fase 4; marca pedidos sin validar como críticos — se integra en Fase 11), disparado por el primer request que consulta el turno después de la hora de cierre, con una marca en `shifts` para no repetirlo. `to_production()` sigue siendo una acción manual del admin.
+  _Prueba:_ tests: `current_status` antes/durante/después del cierre sin llamar nada más; `on_shift_closed` se aplica una sola vez aunque se detecte en dos requests seguidos; `to_production()` solo lo dispara el admin. _Depende de:_ T-2.2.2
 
-## Tema 2.3 · Jobs de turno
-
-- [ ] **T-2.3.1 · [Backend] `jobs/scheduler.py` con APScheduler en el `lifespan`**
-  `AsyncIOScheduler` que arranca/para con la app. Registro de jobs con lock por `service_date`.
-  _Prueba:_ al levantar la app se ve el log "scheduler started"; al frenar, "stopped". _Depende de:_ T-0.2.6
-
-- [ ] **T-2.3.2 · [Backend] Jobs `ensure_shift`, `shift_open`, `shift_close`**
-  `ensure_shift` diario 00:05; `shift_open`/`shift_close` cada minuto comparando con la ventana. `shift_close` marca (más adelante) los pedidos sin validar como críticos.
-  _Prueba:_ test invocando los jobs manualmente con "now" simulado: abren/cierran el turno correcto. _Depende de:_ T-2.3.1, T-2.2.4
+> **Nota:** este roadmap tenía un `Tema 2.3 · Jobs de turno` con un scheduler (`APScheduler`) para abrir/cerrar el turno y expirar reservas de stock por tiempo. Se decidió sacarlo: nada de esto necesita un proceso corriendo en segundo plano — todo se calcula bajo demanda, en el momento en que un request lo pregunta (detalle y motivo en `02_Documento_Tecnico.md` §10). Los antiguos `T-2.3.1`/`T-2.3.2` quedan reemplazados por `T-2.2.4` de arriba; las tareas de otras fases que dependían de ellos se actualizaron para depender de `T-2.2.4` en su lugar.
 
 ## Tema 2.4 · Endpoint del turno y front
 
@@ -516,9 +561,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `commit(order_id)`: HELD→COMMITTED y `consumed_qty += qty`. `release(order_id)`: HELD|COMMITTED→RELEASED y si estaba COMMITTED `consumed_qty -= qty`.
   _Prueba:_ tests de ambos y de idempotencia (llamar dos veces no rompe). _Depende de:_ T-4.2.1
 
-- [ ] **T-4.2.3 · [Backend] Job `reservation_expiry` (cada 60 s)**
-  Reservas HELD con `expires_at < now` → RELEASED. Marca los pedidos afectados (integración de estado en Fase 9) y deja log.
-  _Prueba:_ test: crea reserva con `expires_at` en el pasado, corre el job, queda RELEASED y el stock vuelve a estar disponible. _Depende de:_ T-4.2.1, T-2.3.1
+- [ ] **T-4.2.3 · [Lógica] Liberar reservas vencidas al leer (sin job)**
+  `StockService.available()`/`.reserve()` liberan primero las reservas HELD con `expires_at < now` (→ RELEASED) antes de calcular disponibilidad — no hay un proceso aparte corriendo cada 60 s, se resuelve en el momento en que alguien consulta o intenta reservar ese producto. Marca los pedidos afectados (integración de estado en Fase 9) y deja log.
+  _Prueba:_ test: crea reserva con `expires_at` en el pasado, llama `available()` del mismo producto, la reserva queda RELEASED y el stock vuelve a estar disponible — sin invocar nada más. _Depende de:_ T-4.2.1
 
 ## Tema 4.3 · Integraciones y front
 
@@ -531,7 +576,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   _Prueba:_ test: producto con stock 0 → `in_stock=false`. _Depende de:_ T-4.1.2, T-3.2.4
 
 - [ ] **T-4.3.3 · [Backend] Congelar stock al cerrar el turno**
-  `ShiftService.close()` toma snapshot: fija `initial_qty` del turno = disponible al momento del cierre (o deja el configurado). Integrar en el job `shift_close`.
+  `ShiftService.on_shift_closed()` (T-2.2.4) toma snapshot: fija `initial_qty` del turno = disponible al momento del cierre (o deja el configurado). Se dispara sola, la primera vez que un request detecta el turno cerrado — no hace falta integrarlo a nada aparte.
   _Prueba:_ test: tras cierre, el stock del turno queda fijo. _Depende de:_ T-2.2.4, T-4.1.1
 
 - [ ] **T-4.3.4 · [Frontend] Admin: gestión de stock**
@@ -839,9 +884,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `GET /orders/admin/validation-queue`, `POST /payments/order/{id}/approve`, `/reject`, `/mark-review`.
   _Prueba:_ test end-to-end: cliente crea y paga → admin ve en la cola → aprueba → estado `PAYMENT_APPROVED`. _Depende de:_ T-11.1.2, T-11.1.3
 
-- [ ] **T-11.1.5 · [Backend] `shift_close`: marcar sin validar como críticos**
-  Al cerrar el turno, los pedidos aún sin aprobar quedan señalados para decisión del admin (no entran a producción).
-  _Prueba:_ test: tras el cierre, un pedido sin validar no aparece en el consolidado de producción. _Depende de:_ T-2.3.2, T-11.1.2
+- [ ] **T-11.1.5 · [Backend] `on_shift_closed`: marcar sin validar como críticos**
+  Parte del efecto de una sola vez al detectar el cierre (T-2.2.4): los pedidos aún sin aprobar quedan señalados para decisión del admin (no entran a producción).
+  _Prueba:_ test: tras el cierre, un pedido sin validar no aparece en el consolidado de producción. _Depende de:_ T-2.2.4, T-11.1.2
 
 - [ ] **T-11.1.6 · [Frontend] `pages/admin/dashboard.html`**
   Tarjetas: pedidos del día, **pedidos sin validar**, **críticos**, ventas del turno, stock bajo, deliveries disponibles. Estilo del sistema, layout de escritorio.
@@ -1021,8 +1066,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `POST /drivers/me/location` (DELIVERY), `GET /assignments/{id}/location` (ADMIN), `GET /orders/{id}/tracking` (CUSTOMER dueño).
   _Prueba:_ test: el repartidor reporta ubicación, el admin la ve, el cliente ve su posición relativa. _Depende de:_ T-15.1.2
 
-- [ ] **T-15.1.4 · [Backend] Job de purga de ubicaciones (> 7 días)**
-  _Prueba:_ test: ubicaciones viejas se eliminan al correr el job. _Depende de:_ T-15.1.1, T-2.3.1
+- [ ] **T-15.1.4 · [Backend] Purga de ubicaciones viejas (> 7 días) al escribir, sin job**
+  `push_location()` (T-15.1.3), de paso, borra las ubicaciones de ese repartidor con más de 7 días — sin scheduler dedicado, es solo higiene de datos y no tiene apuro de horario.
+  _Prueba:_ test: al reportar una ubicación nueva, las viejas de ese repartidor (> 7 días) se eliminan. _Depende de:_ T-15.1.1, T-15.1.3
 
 - [ ] **T-15.1.5 · [Frontend] App del repartidor: envío de ubicación**
   Con ruta activa, `navigator.geolocation.watchPosition` → `POST /drivers/me/location` cada N segundos. Manejo de permisos denegados.
@@ -1098,7 +1144,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 - [ ] **T-17.1.7 · [Backend + Docs] Seed/demo final y `Usuarios.md` al día**
   Datos demo coherentes para una demo completa; credenciales de todos los usuarios de prueba documentadas.
-  _Prueba:_ `iniciar.bat` en una máquina limpia deja el proyecto listo para demo. _Depende de:_ T-17.1.5
+  _Prueba:_ siguiendo el arranque manual del `README.md` (local) o el runbook `deploy/DEPLOY.md` (VPS), el proyecto queda listo para demo. _Depende de:_ T-17.1.5
 
 - [ ] **T-17.99 · [Docs] `Fase 17 - Cierre de MVP.md`**
 
@@ -1127,8 +1173,8 @@ No forma parte de este roadmap detallado; se planificará al cerrar el MVP.
 
 | Fase | Estado | Doc de cierre |
 |---|---|---|
-| 0 · Andamiaje y base visual | ✅ Completa | `Fase 00 - Andamiaje y base visual.md` |
-| 1 · Usuarios, roles y autenticación | 🟨 En curso | — |
+| 0 · Andamiaje y base visual | ⬜ Pendiente | — |
+| 1 · Usuarios, roles y autenticación | ⬜ Pendiente | — |
 | 2 · Configuración y turnos | ⬜ Pendiente | — |
 | 3 · Catálogo | ⬜ Pendiente | — |
 | 4 · Stock | ⬜ Pendiente | — |

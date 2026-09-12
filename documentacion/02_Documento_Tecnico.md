@@ -19,7 +19,7 @@
 7. Enumeraciones y catálogos
 8. Máquina de estados del pedido
 9. Lógica de negocio (servicios de dominio)
-10. Tareas programadas (jobs)
+10. Resolución bajo demanda (sin tareas programadas)
 11. API REST — convenciones
 12. API REST — endpoints por módulo
 13. Autenticación y autorización
@@ -33,7 +33,7 @@
 21. Datos semilla y usuarios de prueba
 22. Testing
 23. Migraciones de base de datos
-24. Ejecución local (`iniciar.bat`) y entornos
+24. Ejecución local y entornos (desarrollo y despliegue en producción)
 25. Estrategia de escalabilidad
 26. Zona horaria y manejo de fechas
 27. Convenciones de código
@@ -72,17 +72,19 @@ Premisas fijas del proyecto:
 | Hash de contraseñas | **passlib[bcrypt]** | Estándar, con sal |
 | Tokens | **PyJWT** (o `python-jose`) | JWT access + refresh |
 | OAuth Google | **Authlib** | Cliente OAuth2 / OIDC |
-| Tareas programadas | **APScheduler** (in-process) | Expira reservas de stock, cierra turnos. Sin infra extra |
 | HTTP client (servicios externos) | **httpx** | Geocodificación, etc. |
 | Config | **pydantic-settings** + `.env` | Un único punto de configuración |
 | Logging | **logging** stdlib + formato JSON opcional | Trazabilidad |
 | Frontend build | **Tailwind CLI** (binario standalone, sin Node obligatorio) | Genera `tailwind.css`. En desarrollo temprano se admite el CDN de Tailwind |
 | Frontend runtime | HTML multipágina + **ES Modules** vanilla | Sin dependencias; simple y portable |
-| Servido del front | En **dev**: `python -m http.server` (puerto 5500). En **prod**: `StaticFiles` montado en FastAPI | Un solo proceso en prod |
+| Servido del front | En **dev**: `python -m http.server` (puerto 5500). En **prod**: **Vercel** (hosting estático, build en su CI) | Despliegue independiente del backend, sin servidor Python de por medio |
+| Hosting backend + DB | **VPS Contabo** (Ubuntu, 4 vCPU / 8 GB RAM / 100 GB) con Nginx + Uvicorn vía `systemd` + Certbot (HTTPS) | Contratado (plan anual) por el usuario; SQLite vive como archivo en su disco |
 | Tests | **pytest** + **httpx.AsyncClient** + SQLite en memoria | Rápidos y aislados |
 | Formato/lint | **ruff** + **black** (Python) · Prettier opcional (HTML/JS) | Consistencia |
 
 > No se usa Node.js como dependencia de ejecución. El binario de Tailwind CLI es autónomo. Si el equipo prefiere, puede quedarse en el CDN de Tailwind durante toda la Fase 0–2 y hacer el build recién al empaquetar.
+
+> **Sin tareas programadas de fondo.** El turno (apertura/cierre) y el vencimiento de reservas de stock **no** dependen de un proceso que vigile el reloj: se resuelven **bajo demanda**, calculando el estado a partir de la hora actual en el momento en que alguien lo pide (ver §10). Esto evita un componente más para operar (`APScheduler` u otro *scheduler*) sin perder ninguna regla de negocio — el detalle y el motivo de esta decisión están en §10.
 
 ---
 
@@ -111,8 +113,6 @@ Premisas fijas del proyecto:
              ▼                 ▼                         ▼
    GeocodingService      NotificationService        RouteService
    (Nominatim/Google)    (in-app → email/push)      (manual → OSRM/Google)
-             ▲
-       APScheduler (jobs: expira reservas, cierra turno)
 ```
 
 Reglas de dependencia entre capas (una sola dirección):
@@ -167,13 +167,9 @@ Morfi Center/
 │   │   │       ├── geocoding.py    # GeocodingProvider (Protocol) + NominatimProvider, GoogleProvider
 │   │   │       ├── routing.py      # RouteProvider + ManualProvider, OsrmProvider
 │   │   │       └── storage.py      # FileStorage + LocalFileStorage
-│   │   ├── api/
-│   │   │   ├── deps.py             # get_current_user, require_role(...), get_session
-│   │   │   └── routes/             # 1 router por módulo (ver §12)
-│   │   └── jobs/
-│   │       ├── scheduler.py
-│   │       ├── reservation_expiry.py
-│   │       └── shift_close.py
+│   │   └── api/
+│   │       ├── deps.py             # get_current_user, require_role(...), get_session
+│   │       └── routes/             # 1 router por módulo (ver §12)
 │   ├── alembic/                    # env.py + versions/
 │   ├── tests/
 │   │   ├── conftest.py             # app + DB en memoria + fixtures de usuarios
@@ -212,9 +208,15 @@ Morfi Center/
 │   └── postcss? (no requerido con Tailwind CLI standalone)
 │
 ├── documentacion/
+│   └── Fases/                       # documento de cierre de cada fase completada
+├── deploy/
+│   ├── nginx.morficenter.conf       # reverse proxy + TLS (plantilla, sin datos reales)
+│   ├── morficenter-api.service      # unidad systemd para Uvicorn (plantilla)
+│   └── DEPLOY.md                    # runbook de despliegue en el VPS Contabo (sin credenciales)
+├── .github/
+│   └── workflows/
+│       └── deploy-backend.yml       # CD: push a master → SSH al VPS → pull + migrar + reiniciar
 ├── .claude/skills/morfi-frontend/  # sistema de diseño del front
-├── iniciar.bat
-├── que_hice.html
 └── .gitignore
 ```
 
@@ -747,7 +749,7 @@ PAYMENT_UNDER_REVIEW ──cancel(CUSTOMER dentro de ventana | ADMIN)──▶ C
 PAYMENT_REJECTED ──reupload_proof(CUSTOMER)──▶ PAYMENT_UNDER_REVIEW
 PAYMENT_REJECTED ──cancel(CUSTOMER | ADMIN)──▶ CANCELLED
 
-PAYMENT_APPROVED ──start_production(ADMIN|job cierre)──▶ IN_PREPARATION
+PAYMENT_APPROVED ──start_production(ADMIN)──▶ IN_PREPARATION
 PAYMENT_APPROVED ──cancel(ADMIN excepcional)──▶ CANCELLED
 
 IN_PREPARATION ──mark_ready(ADMIN)──▶ READY_FOR_PICKUP
@@ -805,14 +807,23 @@ check(address) -> CoverageResult(ok, distance_km, reason)
   reason = 'out_of_neighborhood' | 'out_of_radius' | None
 ```
 
-### 9.3 StockService — reserva con vencimiento
+### 9.3 StockService — reserva con vencimiento (resuelto bajo demanda, sin job)
 
 ```
-available(product, shift) = product_stock.initial_qty
-                          - sum(reservations HELD vigentes)      # not expired
-                          - product_stock.consumed_qty
+_release_expired(product):
+  # se corre al principio de available() y de reserve() — nunca aparte, nunca por sí solo
+  reservations HELD de product con expires_at < now -> RELEASED
+  para cada una: si el pedido sigue en PENDING_PAYMENT/PAYMENT_UNDER_REVIEW sin comprobante,
+                 pasarlo a CANCELLED (reason='reservation_expired') y notificar al cliente
+
+available(product, shift):
+  _release_expired(product)
+  return product_stock.initial_qty
+       - sum(reservations HELD vigentes)      # ya sin las vencidas
+       - product_stock.consumed_qty
 
 reserve(order, items, shift):
+  for item: _release_expired(item.product)
   for item: if available(item.product) < item.qty -> raise OutOfStock
   crear stock_reservations(status=HELD, expires_at = now + stock.reservation_ttl_min)
 
@@ -820,7 +831,7 @@ commit(order):   reservations HELD -> COMMITTED ; consumed_qty += qty
 release(order):  reservations HELD|COMMITTED -> RELEASED ; si COMMITTED: consumed_qty -= qty
 ```
 
-Job `reservation_expiry` (cada 60 s): reservas `HELD` con `expires_at < now` → `RELEASED`; si el pedido sigue en `PENDING_PAYMENT`/`PAYMENT_UNDER_REVIEW` y **no hay comprobante**, se lo puede pasar a `CANCELLED` con `reason='reservation_expired'` (configurable; por defecto solo libera stock y notifica al cliente “tu reserva venció”).
+**Sin job `reservation_expiry`.** No hay nada corriendo en segundo plano contando los 60 segundos: la limpieza de reservas vencidas pasa **como primer paso** de `available()`/`reserve()`, así que se ejecuta exactamente cuando hace falta — cuando alguien consulta stock o intenta reservar. Si nadie consulta ese producto, no hay reservas fantasma bloqueando nada (nadie las está mirando); en cuanto alguien lo hace, la reserva vencida se libera ahí mismo, antes de devolver la respuesta.
 
 ### 9.4 ShippingService — costo de envío
 
@@ -883,13 +894,37 @@ consolidated(shift, include_pending=False):
   si include_pending: sección aparte con PENDING/UNDER_REVIEW (informativo)
 ```
 
-### 9.9 ShiftService
+### 9.9 ShiftService — todo se resuelve bajo demanda, sin job de fondo
 
 ```
-ensure_today_shift(): crea el shift del día desde shift.default si no existe (job diario / lazy)
-open(shift): SCHEDULED->OPEN a open_time
-close(shift): OPEN->CLOSED a close_time  -> no acepta pedidos nuevos ; snapshot de stock del turno
-to_production(shift): CLOSED->IN_PRODUCTION ; PAYMENT_APPROVED -> IN_PREPARATION (masivo)
+resolve_window(shift) -> (open_at_utc, close_at_utc, cancel_deadline_utc)
+  convierte open_time/close_time/cancel_window_min (hora local, texto 'HH:MM')
+  a instantes UTC, usando system_settings.timezone y shift.service_date.
+
+current_status(shift, now=now_utc()) -> SCHEDULED | OPEN | CLOSED
+  se calcula en el momento a partir de resolve_window(shift) — nunca se
+  guarda, nunca lo cambia un proceso de fondo. Dos llamadas con el mismo
+  `now` siempre dan el mismo resultado (es una función pura).
+
+is_ordering_open(shift, now) -> current_status(shift, now) == OPEN
+
+ensure_today_shift(): si no existe el shift de hoy (según shift.default y
+  weekdays), lo crea. Se invoca al principio de cualquier flujo que
+  necesite "el turno de hoy" (GET /shift/current, crear un pedido, abrir
+  el panel admin) — no hace falta que corra a una hora fija; alguien
+  visitando la página después de medianoche lo dispara solo.
+
+on_shift_closed(shift): efecto de **una sola vez** al cerrar (congelar
+  `product_stock` del turno, marcar los pedidos sin validar como
+  críticos) — se ejecuta la primera vez que algún request detecta
+  `current_status(shift, now) == CLOSED` y todavía no se aplicó (una
+  columna/flag en `shifts` evita repetirlo si dos requests llegan casi
+  a la vez). No es un job: lo dispara el primer request que consulta el
+  turno después de la hora de cierre — sea un cliente o el propio admin.
+
+to_production(shift): acción **manual del admin** (nunca automática) —
+  decide cuándo arrancar a cocinar. PAYMENT_APPROVED -> IN_PREPARATION
+  (masivo, sobre los pedidos de ese turno).
 ```
 
 ### 9.10 AssignmentService / TrackingService
@@ -899,24 +934,29 @@ assign(shift, driver, order_ids): crea/actualiza delivery_assignment + route + s
 reorder(route, order): reordena stop_index (o RouteProvider.optimize -> nuevo orden)
 start_route(assignment): assignment IN_PROGRESS ; driver.status EN_RUTA ; stops.order -> OUT_FOR_DELIVERY
 push_location(driver, lat, lng): inserta driver_locations (solo si assignment IN_PROGRESS)
+  ; de paso, borra las ubicaciones de ese repartidor con más de 7 días (higiene de
+  ; datos oportunista — sin job dedicado, ver §10)
 customer_view(order): { status, stop_index, stops_before = count(pending antes), eta }  # sin datos de terceros
 ```
 
 ---
 
-## 10. Tareas programadas (jobs)
+## 10. Resolución bajo demanda (sin tareas programadas de fondo)
 
-`APScheduler` (`AsyncIOScheduler`) iniciado en el `lifespan` de FastAPI.
+**Decisión de diseño:** el proyecto no tiene ningún proceso corriendo en segundo plano vigilando el reloj (nada de `APScheduler`, ni `jobs/`, ni un *worker* aparte). Todo lo que antes se pensaba como un *job* con una frecuencia fija se resuelve **en el momento en que un request lo necesita**, calculando contra la hora actual:
 
-| Job | Frecuencia | Acción |
+| Antes (job con frecuencia) | Ahora (bajo demanda) | Dónde vive |
 |---|---|---|
-| `reservation_expiry` | cada 60 s | libera reservas `HELD` vencidas; notifica al cliente |
-| `shift_open` | cada 1 min (o cron a `open_time`) | `SCHEDULED→OPEN` cuando corresponde |
-| `shift_close` | cada 1 min (o cron a `close_time`) | `OPEN→CLOSED`; congela stock del turno; marca `validation_critical` los pedidos sin validar |
-| `ensure_shift` | diario 00:05 local | crea el turno del día siguiente desde `shift.default` |
-| `driver_locations_prune` | diario | borra ubicaciones > 7 días |
+| `shift_open` / `shift_close` cada 1 min | `ShiftService.current_status(shift, now)` — se calcula en cada request que pregunta por el turno | §9.9 |
+| `ensure_shift` diario 00:05 | `ShiftService.ensure_today_shift()` — se dispara con el primer request del día que necesita el turno de hoy | §9.9 |
+| `reservation_expiry` cada 60 s | `StockService.available()`/`.reserve()` liberan las reservas vencidas como primer paso, antes de calcular disponibilidad | §9.3 |
+| `driver_locations_prune` diario | se borran ubicaciones de más de 7 días como parte de `push_location()` (al insertar una nueva, de paso se limpian las viejas de ese repartidor) — sin urgencia de horario, es solo higiene de datos | §9.10 |
 
-Todos los jobs son **idempotentes** y toleran ejecución solapada (lock por `service_date`/`shift_id`).
+**Por qué:** ninguna de estas reglas necesita dispararse en un segundo exacto sin que haya nadie mirando — si nadie visita la app a la medianoche, tampoco hay nadie esperando que el turno haya cambiado de estado en ese instante. La primera visita del día (de un cliente o del admin) dispara el cálculo, y el resultado es idéntico al que hubiera dado un job seguido al segundo. Esto evita un componente de infraestructura entero (el *scheduler*) sin perder ninguna regla de negocio.
+
+**La única salvedad:** los efectos de una sola vez (como congelar el stock al cerrar el turno) necesitan una marca para no repetirse — ver `on_shift_closed` en §9.9. No hace falta un *lock* distribuido tipo *cron*: alcanza con una columna/flag y una escritura idempotente (si dos requests llegan casi a la vez, el segundo encuentra el flag ya puesto y no hace nada).
+
+**Si en el futuro hiciera falta algo realmente asíncrono** (por ejemplo, mandar un mail o una notificación push a las 12:00 en punto aunque nadie esté navegando), ahí sí tendría sentido sumar un *scheduler* — pero sería una adición puntual para ese caso, no una pieza estructural del proyecto.
 
 ---
 
@@ -1343,7 +1383,11 @@ El sobrante de ancho en escritorio se resuelve **con más columnas**, no con má
 ## 17. Integración frontend ↔ backend
 
 - **Dev**: front en `http://localhost:5500`, API en `http://localhost:8000`. `window.__MC_API__ = 'http://localhost:8000/api/v1'`. CORS habilitado para ese origen, `allow_credentials=True`.
-- **Prod**: FastAPI sirve `frontend/` como estáticos (`app.mount('/', StaticFiles(directory='frontend', html=True))`) y la API bajo `/api/v1`. Mismo origen → sin CORS, cookie de refresh directa.
+- **Prod**: front y back quedan en **dos hosts distintos** — front en **Vercel** (dominio `*.vercel.app` mientras no haya dominio propio) y API en el **VPS Contabo**, detrás de Nginx con HTTPS vía Certbot. Es **cross-origin real**, no "mismo origen" como se pensaba originalmente:
+  - CORS: `allow_origins=[FRONTEND_ORIGIN]` con la URL exacta que asigna Vercel, `allow_credentials=True`. Nunca `allow_origins=['*']` junto con `allow_credentials=True` (el navegador lo rechaza y además es inseguro).
+  - Cookie de refresh: al ser cross-site, no alcanza con `SameSite=Lax` — en producción se configura `SameSite=None; Secure` (exige HTTPS en ambos extremos, ya cubierto por Vercel y por Certbot en el VPS).
+  - Ambos extremos **deben** servir HTTPS: Vercel lo da por defecto; en el VPS lo resuelve Nginx + Certbot (ver §24.4 y `deploy/DEPLOY.md`).
+  - Si en el futuro se compra un dominio propio (p. ej. `app.morficenter.com` / `api.morficenter.com`), conviene pasar la cookie a `Domain=.morficenter.com` con `SameSite=Lax`: deja de ser cross-site para el navegador y es más robusto que `SameSite=None`. Queda anotado como mejora futura, no bloquea el MVP.
 - Contrato: OpenAPI (`/api/openapi.json`). Ante cambios de API se actualiza este documento y, si aplica, un `frontend/assets/js/api-types.js` con JSDoc.
 - Errores de red / 5xx: `ui.js` muestra un toast estándar; los 4xx de dominio muestran el `error.message` del backend.
 
@@ -1363,7 +1407,7 @@ El sobrante de ancho en escritorio se resuelve **con más columnas**, no con má
 | CORS | Lista blanca explícita; `allow_credentials` solo con orígenes concretos. |
 | Rate limiting | `slowapi` en `/auth/login`, `/auth/register`, `/password/*` (p. ej. 10/min por IP). |
 | Headers | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`, CSP básica en las páginas. |
-| CSRF | Refresh cookie `SameSite=Lax` y `Path` acotado; endpoints mutadores requieren `Authorization` (no cookie) → CSRF no aplica al access. |
+| CSRF | Refresh cookie `SameSite=Lax` (dev) / `SameSite=None; Secure` (prod, front y back en hosts distintos) y `Path` acotado; endpoints mutadores requieren `Authorization` (no cookie) → CSRF no aplica al access. |
 | Secretos | `.env` fuera de git; `.env.example` versionado. |
 | Ubicación de repartidores | Solo se acepta `POST /drivers/me/location` con `assignment` en `IN_PROGRESS`; se purga a los 7 días. |
 | Auditoría | `audit_log` en: aprobación/rechazo de pago, cancelación, cambio de precio/stock, cambios de configuración, alta/cambio de rol de usuario. |
@@ -1381,7 +1425,8 @@ APP_ENV=development                 # development | production
 APP_NAME=Morfi Center
 APP_TIMEZONE=America/Argentina/Buenos_Aires
 API_PREFIX=/api/v1
-FRONTEND_ORIGIN=http://localhost:5500
+FRONTEND_ORIGIN=http://localhost:5500      # prod: URL pública del proyecto en Vercel
+COOKIE_SAMESITE=lax                        # lax en dev; "none" en prod (front y back en hosts distintos)
 
 # DB
 DATABASE_URL=sqlite:///./data/morfi.db
@@ -1406,11 +1451,13 @@ ROUTE_PROVIDER=manual                # manual | osrm | google
 STORAGE_DIR=./storage
 MAX_UPLOAD_MB=8
 
-# Jobs
+# Turnos y reservas
 RESERVATION_TTL_MIN=40
 ```
 
-`core/config.py` expone `settings` tipado (pydantic-settings). En `production`, `APP_ENV=production` fuerza `Secure` en cookies y CSP estricta.
+`core/config.py` expone `settings` tipado (pydantic-settings). En `production`, `APP_ENV=production` fuerza `Secure` y `SameSite=None` en cookies (front y back en hosts distintos) y CSP estricta.
+
+> **Secretos reales:** `backend/.env` con valores reales existe **únicamente en el VPS Contabo** (nunca en git, ni siquiera en `documentacion/`). `.env.example` documenta qué claves hacen falta, sin valores reales; se cargan a mano la primera vez que se configura el servidor (ver Fase 0, Tema 0.7, y `deploy/DEPLOY.md`).
 
 ---
 
@@ -1442,7 +1489,7 @@ Excepciones de dominio (`core/errors.py`): `DomainError` base → `NotFoundError
 
 - `logging` stdlib. En `production`, formato JSON (timestamp, level, logger, request_id, user_id, msg).
 - `request_id` por request (middleware) propagado a logs y devuelto en header `X-Request-Id`.
-- Se loguean: request/response de mutaciones, transiciones de estado, jobs, errores 5xx (con stack), llamadas a servicios externos (latencia, resultado).
+- Se loguean: request/response de mutaciones, transiciones de estado, errores 5xx (con stack), llamadas a servicios externos (latencia, resultado).
 
 ### 20.3 Auditoría
 
@@ -1457,7 +1504,7 @@ Excepciones de dominio (`core/errors.py`): `DomainError` base → `NotFoundError
 - `system_settings` con los valores de §6.11.
 - Turno del día (`ensure_today_shift`).
 - 6 categorías + ~15 productos con stock y una promo + un Plato del Día.
-- **Usuarios de prueba** (contraseñas simples, solo test) — se documentan en los primeros slides de `que_hice.html`, no aquí en detalle. Formato previsto:
+- **Usuarios de prueba** (contraseñas simples, solo test) — se documentan en `documentacion/Usuarios.md`, no aquí en detalle. Formato previsto:
 
 | Rol | Email | Password |
 |---|---|---|
@@ -1465,7 +1512,7 @@ Excepciones de dominio (`core/errors.py`): `DomainError` base → `NotFoundError
 | Cliente | `cliente@morficenter.test` | `cliente123` |
 | Delivery | `delivery@morficenter.test` | `delivery123` |
 
-`que_hice.html` mantiene la lista viva y agrega los que se creen durante el desarrollo.
+`documentacion/Usuarios.md` mantiene la lista viva y se actualiza con cada usuario de prueba que se cree durante el desarrollo.
 
 ---
 
@@ -1491,12 +1538,14 @@ Excepciones de dominio (`core/errors.py`): `DomainError` base → `NotFoundError
   alembic downgrade -1
   ```
 - Cada cambio de modelo → una migración versionada en `alembic/versions/`. Nunca editar el esquema a mano.
-- `iniciar.bat` ejecuta `alembic upgrade head` antes de levantar el backend.
+- En local, las migraciones se corren a mano (`alembic upgrade head`) antes de levantar el backend; en el VPS, el runbook de despliegue (`deploy/DEPLOY.md`) las corre como parte del deploy.
 - SQLite: para `ALTER` complejos, Alembic usa *batch mode* (`render_as_batch=True`).
 
 ---
 
-## 24. Ejecución local (`iniciar.bat`) y entornos
+## 24. Ejecución local y entornos
+
+No existe ningún script tipo `iniciar.bat`: en local cada servicio se levanta a mano (§24.2) y en producción el despliegue es a través de Vercel (front) y del runbook del VPS (back) — ver §24.4.
 
 ### 24.1 Puertos
 
@@ -1505,37 +1554,56 @@ Excepciones de dominio (`core/errors.py`): `DomainError` base → `NotFoundError
 | Backend (FastAPI/Uvicorn) | 8000 | http://localhost:8000 · docs en `/api/docs` |
 | Frontend (dev static server) | 5500 | http://localhost:5500 |
 
-### 24.2 `iniciar.bat` (comportamiento esperado)
+### 24.2 Arranque en desarrollo (manual)
 
-```bat
-@echo off
-REM 1) venv + dependencias (si falta)
-if not exist backend\.venv ( python -m venv backend\.venv )
-call backend\.venv\Scripts\activate
-pip install -q -r backend\requirements.txt
+Cada servicio se levanta a mano, en su propia terminal:
 
-REM 2) migraciones + seed
-pushd backend
+```
+# Terminal 1 — backend
+cd backend
+python -m venv .venv
+call .venv\Scripts\activate          # o el shell equivalente
+pip install -r requirements.txt
 alembic upgrade head
 python -m app.db.seed
-REM 3) backend en background
-start "Morfi API" cmd /k "call .venv\Scripts\activate && uvicorn app.main:app --reload --port 8000"
-popd
+uvicorn app.main:app --reload --port 8000
 
-REM 4) frontend estático en background
-start "Morfi Front" cmd /k "python -m http.server 5500 --directory frontend"
-
-REM 5) abrir navegador
-timeout /t 3 >nul
-start http://localhost:5500
+# Terminal 2 — frontend
+python -m http.server 5500 --directory frontend
 ```
 
-> El archivo real se crea en la fase de tooling. Este documento fija su contrato: **levanta backend, luego frontend, luego abre el navegador**.
+Documentado también en el `README.md` de la raíz del proyecto.
 
 ### 24.3 Entornos
 
-- **development**: `--reload`, CORS a `localhost:5500`, cookies sin `Secure`, CSP laxa, seed automático, Swagger visible.
-- **production**: un solo proceso Uvicorn sirviendo API + `frontend/` estático, cookies `Secure`, CSP estricta, sin `--reload`, Swagger detrás de auth admin o deshabilitado, `alembic upgrade head` en el deploy.
+- **development**: `--reload`, CORS a `localhost:5500`, cookies sin `Secure` y `SameSite=Lax`, CSP laxa, seed automático, Swagger visible.
+- **production**: Uvicorn como servicio `systemd` en el VPS Contabo detrás de Nginx (reverse proxy + TLS); frontend servido aparte por Vercel. Cookies `Secure` + `SameSite=None` (hosts distintos), CSP estricta, sin `--reload`, Swagger detrás de auth admin o deshabilitado, `alembic upgrade head` como paso del deploy.
+
+### 24.4 Despliegue en producción: Vercel (front) + VPS Contabo (back + DB)
+
+**Frontend → Vercel**
+- Proyecto de Vercel conectado al repositorio Git; deploy automático en cada push (rama a definir: `master` o una rama `prod` separada).
+- Build: sirve `frontend/` como sitio estático. Si Tailwind se compila por CLI, el *build command* de Vercel corre `tailwindcss -i ... -o ... --minify`; al principio, más simple, se puede commitear `tailwind.css` ya generado.
+- `window.__MC_API__` apunta a la URL pública del backend en el VPS.
+- Dominio: mientras no haya dominio propio, se usa el `*.vercel.app` que asigna Vercel.
+
+**Backend + base de datos → VPS Contabo**
+- Servidor contratado: Ubuntu LTS, 4 vCPU / 8 GB RAM / 100 GB (plan anual).
+- Acceso: usuario no-root dedicado, SSH solo por clave pública/privada (login por contraseña deshabilitado), firewall (`ufw`) abierto únicamente a 22/80/443.
+- Runtime: `venv` de Python + `requirements.txt`; `backend/data/morfi.db` (SQLite) y `backend/storage/` viven en el disco del VPS.
+- Proceso: Uvicorn como servicio `systemd` (`deploy/morficenter-api.service`), con reinicio automático ante caída.
+- Nginx como reverse proxy hacia Uvicorn + Certbot para HTTPS (`deploy/nginx.morficenter.conf`).
+- Variables de entorno reales en `backend/.env`, **solo en el servidor** (nunca en git); `.env.example` es la referencia de qué claves hacen falta.
+- Backups: cron diario que copia `backend/data/morfi.db` y `backend/storage/payment_proofs/` a otro destino (cumple el requisito de backup diario del Documento General §12).
+- Runbook paso a paso, sin credenciales reales, en `deploy/DEPLOY.md`. La puesta a punto inicial del servidor es la Fase 0, Tema 0.7 del Roadmap.
+
+**Despliegue continuo (después del primer deploy manual)**
+
+El proyecto vive siempre desplegado: cada tarea del Roadmap aprobada se commitea y se pushea a `master`, y ese push despliega solo:
+
+- **Frontend**: Vercel ya redeploya automáticamente al estar conectado al repositorio (T-0.7.5) — no requiere configuración adicional.
+- **Backend**: `.github/workflows/deploy-backend.yml` (GitHub Actions) se conecta por SSH al VPS en cada push a `master` y ejecuta `git pull` + instalación de dependencias si cambiaron + `alembic upgrade head` + `systemctl restart morficenter-api`. Las credenciales SSH (`VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`) se cargan como *GitHub Actions secrets* — nunca quedan en el repositorio ni en `documentacion/`.
+- Una tarea `[Lógica]`/`[Backend]` sin su `[Frontend]` todavía también se despliega; simplemente no hay cambio visible hasta que ese Frontend llegue (ciclo normal Lógica → Backend → Frontend del proyecto).
 
 ---
 
@@ -1547,7 +1615,6 @@ Simple hoy, sin cerrarse puertas:
 |---|---|---|
 | Motor de datos | SQLite (WAL) | Cambiar `DATABASE_URL` a PostgreSQL; repos y ORM ya lo permiten; migrar con Alembic |
 | Concurrencia de escritura | 1 proceso Uvicorn | Postgres + varios workers Uvicorn/Gunicorn |
-| Tareas en background | APScheduler in-process | Extraer a worker dedicado; luego Celery/RQ + Redis |
 | Tiempo real (GPS/estado) | Polling (`GET` cada N s) | SSE (`/events`) → WebSocket cuando se aborde la fase de tracking |
 | Archivos | `LocalFileStorage` | `S3Storage` (misma interfaz `FileStorage`) |
 | Mapas/rutas | `ManualProvider` / Haversine | `OsrmProvider` / Google (misma interfaz `RouteProvider`) |
@@ -1556,6 +1623,7 @@ Simple hoy, sin cerrarse puertas:
 | Empresas | dirección + `label_for` por ítem | tabla `companies` + `company_members` + `orders.company_id` (punto de extensión) |
 | Cache | — | Cachear catálogo/promos/settings en memoria con invalidación por mutación; luego Redis |
 | API pública / apps nativas | web multipágina | La API REST ya es el límite; una app nativa consumiría los mismos endpoints |
+| Hosting | 1 VPS Contabo (backend + DB) + Vercel (front) | Más VPS / balanceo si el tráfico lo pide; base de datos gestionada (Postgres) en un servicio aparte del que corre la API |
 
 Principios que lo hacen posible: capas de una sola dirección, repos como única puerta a datos, servicios externos detrás de interfaces, dinero en enteros, estados y settings en tablas (no en código), IDs y timestamps consistentes.
 
@@ -1618,12 +1686,12 @@ Bloques técnicos, en orden:
 
 | # | Bloque | Entregable técnico |
 |---|---|---|
-| T0 | Andamiaje | Repos `backend/` + `frontend/`, `main.py`, config, `session.py`, Alembic init, `iniciar.bat`, `que_hice.html`, home HTML con estilo |
+| T0 | Andamiaje | Repos `backend/` + `frontend/`, `main.py`, config, `session.py`, Alembic init, home HTML con estilo, infraestructura de despliegue (Vercel + VPS Contabo) |
 | T1 | Usuarios y auth | `users`, `user_auth_providers`, `user_profiles`, `carts`, `customer_balances`; registro/login/refresh/me; RBAC; login Google; front de auth + guardas |
-| T2 | Configuración y turnos | `system_settings`, `shifts`; endpoints de settings y `shift/current`; job `ensure_shift`/`open`/`close`; countdown en el home |
+| T2 | Configuración y turnos | `system_settings`, `shifts`; endpoints de settings y `shift/current`; `ShiftService` resuelve apertura/cierre bajo demanda (sin job); countdown en el home |
 | T3 | Catálogo | `categories`, `products`, `product_images`, `product_stock`; CRUD admin; listado público con precio resuelto; front catálogo + admin productos |
 | T4 | Promociones | `promotions` (PROMO + DAILY_SPECIAL); `PricingService`; endpoints; bloque Plato del Día y precios promo en el front |
-| T5 | Stock | `stock_reservations`; `StockService`; job de expiración; “sin stock” en el front |
+| T5 | Stock | `stock_reservations`; `StockService` libera vencidas al leer (sin job); “sin stock” en el front |
 | T6 | Carrito | `cart_items`; `CartService` + resumen; front carrito |
 | T7 | Direcciones y cobertura | `addresses`, `delivery_zones`; `GeocodingProvider`, `CoverageService`; endpoints; front dirección + resultado de cobertura |
 | T8 | Envío | `ShippingService` + settings; cotización en el carrito |

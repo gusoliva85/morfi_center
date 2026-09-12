@@ -669,7 +669,7 @@ SYSTEM_SETTINGS (configuración global)
 | **Internacionalización** | Español (es-AR) en Fase 1. Moneda: peso argentino, formato `$00.000`. |
 | **Observabilidad** | Logs estructurados de operaciones críticas (creación de pedido, validación, cambios de estado). |
 | **Backup** | Copia diaria del archivo SQLite y de los comprobantes. |
-| **Mantenibilidad** | Separación clara `backend/` y `frontend/`; convenciones consistentes; documentación viva (`que_hice.html`, roadmap). |
+| **Mantenibilidad** | Separación clara `backend/` y `frontend/`; convenciones consistentes; documentación viva (`documentacion/Fases/`, roadmap). |
 
 ---
 
@@ -685,6 +685,7 @@ SYSTEM_SETTINGS (configuración global)
 | Autenticación | Sesión/token propia + OAuth Google |
 | Almacenamiento de archivos | Sistema de archivos local con acceso autorizado (comprobantes) |
 | Tiempo real (fases posteriores) | Polling en MVP; websockets/SSE cuando se aborde GPS |
+| Hosting / despliegue | Frontend en **Vercel**; backend y base de datos en un **VPS propio (Contabo)** contratado para el proyecto |
 
 ### 13.2 Organización
 
@@ -701,10 +702,11 @@ Morfi Center/
 │   ├── admin/
 │   └── delivery/
 ├── documentacion/
-│   ├── 01_Doc_Funcional.md
-│   └── mockups/
-├── iniciar.bat
-└── que_hice.html
+│   ├── 01_Documento_General.md
+│   ├── mockups/
+│   └── Fases/        # documento de cierre de cada fase completada (qué se hizo, cómo quedó, código)
+├── deploy/           # plantillas de despliegue (Nginx, systemd) y runbook del VPS — ver Documento Técnico §24
+└── .github/workflows/ # despliegue continuo del backend al VPS en cada push a master
 ```
 
 ### 13.3 Principios arquitectónicos
