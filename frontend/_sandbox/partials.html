@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Morfi Center · Sandbox de parciales</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Caveat:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/tailwind.config.js"></script>
+<link rel="stylesheet" href="/assets/css/base.css" />
+</head>
+<body class="pb-[84px] font-sans text-bark antialiased lg:pb-0">
+
+<!-- Requiere estar servido (http.server): usa fetch() e imports root-relative. -->
+<div class="mx-auto max-w-[1200px] px-4 pt-6 lg:py-10">
+  <div class="paper relative overflow-hidden rounded-[34px] border border-bark/10">
+    <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-[34px]">
+      <div class="blob absolute -right-24 -top-24 h-72 w-72 bg-forest/10"></div>
+      <div class="blob2 absolute -bottom-28 -left-20 h-64 w-64 bg-mustard/15"></div>
+    </div>
+
+    <div data-partial="header" class="relative min-h-[92px]"></div>
+
+    <main class="relative px-5 py-8 lg:px-10 lg:py-12">
+      <p class="text-[11px] uppercase tracking-widest text-bark/40">Sandbox · parciales</p>
+      <h1 class="mt-1 font-display text-[36px] font-bold leading-[1.05] lg:text-[52px]">
+        Header, navs y <span class="text-brick">barra de carrito</span>
+      </h1>
+      <p class="mt-4 max-w-md text-[14px] leading-relaxed text-bark/60">
+        En móvil: header compacto + bottom-nav <b>fija</b> + barra de carrito flotante encima.
+        En escritorio (<code>lg</code>): el nav pasa al header y la bottom-nav desaparece.
+      </p>
+
+      <div class="mt-6 flex flex-wrap gap-3">
+        <button type="button" data-toast="default" class="blob bg-forest px-6 py-2.5 text-[13px] font-semibold text-cream transition hover:bg-bark">Toast info</button>
+        <button type="button" data-toast="success" class="blob border-2 border-bark/20 px-4 py-2 text-[13px] transition hover:bg-bark hover:text-cream">Toast éxito</button>
+        <button type="button" data-toast="error" class="blob border-2 border-bark/20 px-4 py-2 text-[13px] transition hover:bg-bark hover:text-cream">Toast error</button>
+      </div>
+
+      <!-- relleno para poder scrollear y ver el sticky -->
+      <div class="mt-8 space-y-3">
+        <div class="lift rounded-2xl border-2 border-bark/12 bg-cream p-4">Contenido de ejemplo 1</div>
+        <div class="lift rounded-2xl border-2 border-bark/12 bg-cream p-4">Contenido de ejemplo 2</div>
+        <div class="lift rounded-2xl border-2 border-bark/12 bg-cream p-4">Contenido de ejemplo 3</div>
+        <div class="lift rounded-2xl border-2 border-bark/12 bg-cream p-4">Contenido de ejemplo 4</div>
+        <div class="lift rounded-2xl border-2 border-bark/12 bg-cream p-4">Contenido de ejemplo 5</div>
+        <div class="lift rounded-2xl border-2 border-bark/12 bg-cream p-4">Contenido de ejemplo 6</div>
+        <div class="lift rounded-2xl border-2 border-bark/12 bg-cream p-4">Contenido de ejemplo 7</div>
+      </div>
+    </main>
+  </div>
+
+  <div data-partial="cart-bar"></div>
+</div>
+
+<div data-partial="bottom-nav"></div>
+
+<script type="module">
+  import { injectPartials, toast, $$ } from "/assets/js/ui.js";
+
+  await injectPartials();
+
+  $$("[data-toast]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const variant = btn.dataset.toast;
+      toast(`Notificación de prueba (${variant})`, { variant });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!-- Parcial: barra de carrito flotante. Se inyecta en <div data-partial="cart-bar">,
+     como HERMANO del panel (no dentro, para que `sticky` funcione).
+     En móvil queda por encima de la bottom-nav fija; en escritorio, cerca del borde.
+     La lógica del carrito llega en la Fase 6. -->
+<div class="sticky bottom-[84px] z-20 mt-4 lg:bottom-6">
+  <div class="flex items-center justify-between rounded-2xl border-2 border-bark/12 bg-cream/95 px-5 py-3.5 backdrop-blur shadow-[0_16px_38px_-16px_rgba(59,46,34,0.45)] lg:px-6">
+    <div>
+      <div class="font-hand text-[15px] text-bark/50">
+        tu vianda · <span data-cart-count>0</span> cosas
+      </div>
+      <div class="font-display text-[20px] font-bold">
+        <span data-cart-total>$0</span>
+        <span class="text-[12px] font-sans font-normal text-bark/40">+ envío</span>
+      </div>
+    </div>
+    <a href="/pages/cliente/carrito.html"
+       class="blob bg-brick px-6 py-2.5 text-[13px] font-semibold text-cream transition hover:bg-bark">
+      Ver mi vianda
+    </a>
+  </div>
+</div>

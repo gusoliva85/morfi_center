@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crear cuenta · Morfi Center</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Caveat:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Dev: Tailwind CDN + config compartida. Prod: /assets/css/tailwind.css -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/tailwind.config.js"></script>
+<link rel="stylesheet" href="/assets/css/base.css" />
+</head>
+<body class="font-sans text-bark antialiased">
+
+<div class="mx-auto flex min-h-screen max-w-[1200px] flex-col items-center justify-center px-4 py-10 lg:px-10">
+
+  <a href="/index.html" class="mb-8 flex items-center gap-3">
+    <span class="blob grid h-11 w-11 place-items-center bg-forest font-display text-lg font-bold text-cream" aria-hidden="true">M</span>
+    <span class="leading-none">
+      <span class="block font-display text-xl font-bold">Morfi Center</span>
+      <span class="block font-hand text-[15px] text-brick">cocina de olla, todos los días</span>
+    </span>
+  </a>
+
+  <div class="paper relative w-full max-w-[520px] overflow-hidden rounded-[26px] border border-bark/10 p-6 lg:p-8">
+    <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-[26px]">
+      <div class="blob absolute -right-16 -top-16 h-48 w-48 bg-forest/10"></div>
+      <div class="blob2 absolute -bottom-20 -left-14 h-44 w-44 bg-mustard/15"></div>
+    </div>
+
+    <div class="relative">
+      <h1 class="font-display text-[26px] font-bold leading-tight">Crear cuenta</h1>
+      <p class="mt-1 font-hand text-[16px] text-brick">te sumás en dos minutos</p>
+
+      <form id="registro-form" class="mt-6 space-y-4" novalidate>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="first_name" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Nombre</label>
+            <input id="first_name" name="first_name" type="text" autocomplete="given-name" required
+                   class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                   placeholder="Gustavo" />
+            <p data-error="first_name" class="mt-1 hidden text-[12px] text-brick"></p>
+          </div>
+          <div>
+            <label for="last_name" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Apellido</label>
+            <input id="last_name" name="last_name" type="text" autocomplete="family-name" required
+                   class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                   placeholder="Pérez" />
+            <p data-error="last_name" class="mt-1 hidden text-[12px] text-brick"></p>
+          </div>
+        </div>
+
+        <div>
+          <label for="email" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" required
+                 class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                 placeholder="vos@ejemplo.com" />
+          <p data-error="email" class="mt-1 hidden text-[12px] text-brick"></p>
+        </div>
+
+        <div>
+          <label for="phone" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Teléfono <span class="normal-case text-bark/35">(opcional)</span></label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel"
+                 class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                 placeholder="11 4444-5555" />
+          <p data-error="phone" class="mt-1 hidden text-[12px] text-brick"></p>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="password" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Contraseña</label>
+            <input id="password" name="password" type="password" autocomplete="new-password" required
+                   class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                   placeholder="mínimo 8 caracteres" />
+            <p data-error="password" class="mt-1 hidden text-[12px] text-brick"></p>
+          </div>
+          <div>
+            <label for="password_confirm" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Repetir contraseña</label>
+            <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" required
+                   class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                   placeholder="repetila" />
+            <p data-error="password_confirm" class="mt-1 hidden text-[12px] text-brick"></p>
+          </div>
+        </div>
+
+        <p data-error="form" class="hidden rounded-xl border-2 border-brick/30 bg-brick/8 px-4 py-3 text-[13px] text-brick" role="alert"></p>
+
+        <button type="submit" data-submit
+                class="blob w-full bg-forest px-6 py-3 text-[13px] font-semibold text-cream transition hover:bg-bark disabled:cursor-not-allowed disabled:opacity-60">
+          Crear cuenta
+        </button>
+      </form>
+
+      <p class="mt-6 text-center text-[13px] text-bark/55">
+        ¿Ya tenés cuenta?
+        <a href="/pages/auth/login.html" class="font-hand text-[16px] text-brick">Iniciá sesión</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/assets/js/pages/registro.js"></script>
+</body>
+</html>

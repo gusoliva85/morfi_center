@@ -1,0 +1,54 @@
+# ============================================================
+#  Morfi Center · backend — configuración de herramientas
+#  (no es un paquete instalable; la app se ejecuta con uvicorn)
+# ============================================================
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = '''
+/(
+  | \.venv
+  | alembic
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["app", "tests"]
+# alembic/ sigue las convenciones del propio Alembic (imports tras código en
+# env.py, plantillas generadas); las migraciones se formatean con el hook `black`.
+extend-exclude = [".venv", "alembic", "data", "storage"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+]
+ignore = [
+    "E501",  # el largo de línea lo maneja black
+    "B008",  # llamadas en defaults: patrón normal de FastAPI (Depends(), Query())
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+addopts = "-q --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning:passlib.*",
+    "ignore::DeprecationWarning:starlette.testclient",
+    # Authlib 1.8 recomienda un paquete `httpx2` que todavía no existe en PyPI
+    # como reemplazo estable de `httpx_client`; hasta que lo publiquen, seguir
+    # usando `authlib.integrations.httpx_client` es la única opción.
+    "ignore::authlib.deprecate.AuthlibDeprecationWarning",
+]

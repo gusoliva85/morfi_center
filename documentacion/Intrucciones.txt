@@ -1,0 +1,32 @@
+Vamos a trabajar en el proyecto Morfi Center, vamos hacer una web que se puede ver web y mobile first (es uso principal).
+Para mayor detalle del proyecto vas a tener toda la información de que trata dentro del archivo "documentacion\MORFI_CENTER_INFO.md", leelo para tener el contexto completo del proyecto.
+
+Una vez que tengas todo entendido vas a crear en "documentacion\" el archivo "01_Doc_Funcional.md" en donce vas a crear todo el documento funcional que se hace en cualquier proyecto explicando como se hara el proyecto, a que apunta, y todo lo clasico de un documento funcional.
+Una vez que tengas todo listo vamos a pasar a la siguiente etapa, los mockups de como se vera la aplicación, esto es clave ya que dará identidad al proyecto. Para poder definir como se va a implementar el front vas a tener que hacer 5 mockups todos diferentes entre si (pueden ser artísticos, empresariales, premium, profesionales, etc) de la pantalla principal, teniendo en cuenta todos los pedidos del proyecto, haciéndolos fácil de entender, y enfocados siempre en una buena presentación destacable, premium y profesional, con buenos efectos visuales (nada de neon). Vas a tener que salir de los típicos diseños de cualquier llm y poder hacer algo mucho mejor.
+Para el realizarlo vas a utilizar HTML + css + tailwind y para el backend Python y SQLite.
+Los mockups lo vas a guardar dentro de la carpeta "documentacion\mockups" y vas a esperar a mi aprobación para poder seguir. 
+
+
+
+
+Ya esta definido cual va a ser el front, va a ser igual a "01_Editorial_Premium" por lo que vas a tener que guardar ese formato en una skill de este proyecto de como se va a visualizar el front.
+Perfecto ahora que ya esta definido el front que va a ser el archivo "01_Editorial_Premium", vas a armar un nuevo documento llamado "02_Documento_Tecnico.md" en base al mockup y el pedido de lo que leiste y tambien lo que armaste en el documento "01_Documento_General.md" vas a definir todo lo tecnico necesario para poder realizar el proyecto completo, todo tiene que estar bien definido. 
+Como dije antes la aplicacion va a ser mobile first con su version web, pero al salir de la resolución mobile va a pasar a la versión web con su formato correspondiente, no solo tiene que ser responsibe sino que las barras de menú y todo lo visual se va adaptar para que en formato web también sea algo visualmente agradable y profesional sin perder la estética, no dejar botones o tarjetas ensanchadas y sin aprovechar los espacios.
+El frontend va a ser html + css + tailwind, y el backend python y sqlite.
+La arquitectura que vas armar tiene que ser simple, respetando las carpetas "backend" y "frontend", con la posibilidad de que sea escalable.
+Avisame cuando tengas todo listo antes de avanzar.
+
+
+
+
+De momento necesito que entiendas todo lo que hicimos para que hagas un nuevo documento llamado "03_Roadmap.md" en el cual vas a documentar todas las fases que vamos a ir implementando y dentro de cada fase vas agregar tareas mas chicas las cual vamos a ir implementando una a una, estas tareas y fases van a estar bien detallada y no vas a dejar pasar nada, todo lo que fue descripto en el documento inicial vamos a ir implementadolo de forma escalada.
+Es importante destacar que cada fase va a estar dividido en diferentes temas que vamos a ir abordando, no es necesario resumir sino que pueden existir muchos temas ya que el proyecto abarca muchas cosas. Lo importante es que cada Fase va a tener muchas tareas y la idea es que primero apliques la lógica, luego el backend y luego lo implementes en el front asi cada fase y tarea lo voy probando y validando al momento, no quiero que nada se implemente sin probar su funcionamiento. Te doy un ejemplo, empezamos con el alta de usuarios, entonces vas a trabajar la lógica SOLO de usuarios, luego vas a trabajar en el backend SOLO de usuarios y roles, y por ultimo para poder probar el funcionamiento voy a ver dentro del front SOLO lo de usuarios porque es lo primero que estamos haciendo y la funcionalidad para poder agregarlo, si en el caso siguiente se agrega el alta de edificio, ya empezare a ver USUARIO y EDIFICIO, los nombres y orden son a modo ejemplo, solo quiero que se entienda la idea.
+Por el motivo previo esta prohibido implementar todo junto, vamos a empezar con un HTML básico solo con el estilo implementado y vamos a ir agregando de a poco a medida que vamos creando las funcionalidades respetando el documento técnico y el roadmap. La idea es ir escalando de a poco cada funcionalidad y cuando finalices cada tarea voy a probarla tal y como ya se menciono.
+Las tareas no quiero que sean solo un titulo, ya que dejan todo muy poco razonable al momento de ir avanzando una a una, minimo van a tener que tener una breve descripcion, no importa si es con palabras o que muestre codigo, pero si o si tiene que indicar que se va hacer.
+Si o si para avanzar vas a esperar mi aprobación para avanzar, una vez que tengas mi aprobación vas a marcarla como realizada con un check a la tarea realizada y en caso de que no vas a revisar la tarea.
+
+También vas a crear el archivo "iniciar.bat" que al ejecutarlo se va a levantar primero el backend, luego el frontend y por ultimo va a levantar el proyecto en un navegador.
+
+También una vez que hayas completado una fase con mi aprobacion, vas a ir creando un documento llamado "Fase 01 - ..." en formato markdown en donde explicas que hiciste, como se implemento (esto abarca a todo lo inicial y sus correcciones, pero en una version final de como quedo, no es necesario aclarar que se arreglaron cosas) y al mismo tiempo mostrando el código implementado, vas a ir actualizando este archivo cada vez que termines una tarea.
+
+Como en este proyecto vamos a ir creando diferentes usuarios de pruebas, cada usuario y contraseña (van a ser muy sencillos, ya que van a ser modo test) van a estar dentro del documento "Usuarios.md" dentro de la carpeta "documentacion", no es problema que tengamos documentados estos datos ya que va a ser todos datos de prueba.

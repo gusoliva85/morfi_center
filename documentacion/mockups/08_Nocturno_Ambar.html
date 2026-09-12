@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Morfi Center · Nocturno Ámbar</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { serif:['Fraunces','Georgia','serif'], sans:['Inter','system-ui','sans-serif'] },
+    colors: { espresso:'#1E1813', cocoa:'#2A231C', amber:'#D99A5B', copper:'#B87333', cream:'#EFE7DA', sagey:'#94A183' },
+  }}};
+</script>
+<style>
+  body{
+    background:
+      radial-gradient(70% 45% at 12% -5%, #2f2620 0%, rgba(47,38,32,0) 55%),
+      radial-gradient(60% 40% at 100% 0%, #2b221b 0%, rgba(43,34,27,0) 60%),
+      linear-gradient(180deg,#1c1712,#161210);
+    color:#EFE7DA; min-height:100vh;
+  }
+  .panel{
+    background:linear-gradient(160deg,#2c241d,#221b15);
+    border:1px solid #ffffff14;
+    box-shadow:0 1px 0 #ffffff10 inset, 0 40px 80px -44px #000000cc, 0 10px 26px -14px #00000080;
+  }
+  .panel-soft{ background:#ffffff08; border:1px solid #ffffff12; }
+  .blob{ border-radius: 60% 40% 46% 54% / 55% 50% 50% 45%; }
+  .softbox{ border-radius: 26px 26px 26px 8px; }
+  .amberline{ background:linear-gradient(90deg,transparent,#D99A5B66,transparent); height:1px; }
+  .foodA{background:linear-gradient(155deg,#6b4530,#331f14);}
+  .foodB{background:linear-gradient(155deg,#414a37,#252b1f);}
+  .foodC{background:linear-gradient(155deg,#6b5734,#3a2e1a);}
+  .foodD{background:linear-gradient(155deg,#5c4234,#33231b);}
+  .lift{transition:transform .4s cubic-bezier(.2,.8,.2,1);}
+  .lift:hover{transform:translateY(-5px);}
+  .emboss{text-shadow:0 1px 0 #00000066;}
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<div class="mx-auto max-w-[1200px] px-4 py-6 lg:py-10">
+  <p class="mb-5 text-center text-[11px] uppercase tracking-[0.34em] text-cream/30">Mockup 08 — Nocturno Ámbar · pantalla principal (cliente)</p>
+
+  <!-- TOP NAV (desktop) -->
+  <header class="panel-soft mb-5 hidden items-center justify-between rounded-2xl px-6 py-3.5 lg:flex">
+    <div class="flex items-center gap-3">
+      <div class="blob grid h-10 w-10 place-items-center bg-amber font-serif text-lg text-espresso">M</div>
+      <div>
+        <div class="font-serif text-lg leading-none emboss">Morfi Center</div>
+        <div class="mt-1 text-[10px] uppercase tracking-[0.3em] text-amber/80">Cocina del mediodía</div>
+      </div>
+    </div>
+    <nav class="flex items-center gap-8 text-sm text-cream/55">
+      <a class="text-cream" href="#">Inicio</a><a class="hover:text-cream" href="#">Menú</a>
+      <a class="hover:text-cream" href="#">Promociones</a><a class="hover:text-cream" href="#">Mis pedidos</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <button class="panel-soft rounded-xl px-4 py-2 text-sm">Oficina · Boedo ▾</button>
+      <button class="panel-soft grid h-9 w-9 place-items-center rounded-xl">🔔</button>
+    </div>
+  </header>
+
+  <div class="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+
+    <!-- LEFT -->
+    <div class="space-y-5">
+
+      <!-- STATUS + COUNTDOWN -->
+      <section class="panel lift relative overflow-hidden rounded-[28px] p-6 lg:p-8">
+        <div class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-amber/10 blur-3xl"></div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="inline-flex items-center gap-2 rounded-full bg-sagey/15 px-3 py-1 text-[12px] font-medium text-sagey">
+            <span class="h-1.5 w-1.5 rounded-full bg-sagey"></span> Pedidos abiertos
+          </span>
+          <span class="text-[12px] text-cream/40">Hoy · turno almuerzo</span>
+        </div>
+
+        <h1 class="mt-5 font-serif text-[34px] leading-[1.06] tracking-tight emboss lg:text-[46px]">
+          Podés pedir hasta<br />las <span class="italic text-amber">12:00</span>
+        </h1>
+        <p class="mt-3 max-w-sm text-[14px] text-cream/50">Después del cierre consolidamos la cocina y armamos las rutas de reparto por zona.</p>
+
+        <div class="mt-6 grid grid-cols-3 gap-3">
+          <div class="panel-soft rounded-2xl px-2 py-4 text-center">
+            <div id="h" class="font-serif text-[36px] tabular-nums emboss">01</div>
+            <div class="mt-1 text-[10px] uppercase tracking-[0.2em] text-cream/35">Horas</div>
+          </div>
+          <div class="panel-soft rounded-2xl px-2 py-4 text-center">
+            <div id="m" class="font-serif text-[36px] tabular-nums emboss">42</div>
+            <div class="mt-1 text-[10px] uppercase tracking-[0.2em] text-cream/35">Min</div>
+          </div>
+          <div class="rounded-2xl border border-amber/35 bg-amber/10 px-2 py-4 text-center">
+            <div id="s" class="font-serif text-[36px] tabular-nums text-amber">15</div>
+            <div class="mt-1 text-[10px] uppercase tracking-[0.2em] text-cream/35">Seg</div>
+          </div>
+        </div>
+
+        <div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div class="h-full w-[64%] rounded-full bg-gradient-to-r from-copper to-amber"></div>
+        </div>
+        <p class="mt-2 text-[12px] text-cream/40">Cancelación disponible hasta las 11:40</p>
+      </section>
+
+      <!-- PLATO DEL DÍA -->
+      <section class="panel lift softbox relative overflow-hidden">
+        <div class="grid grid-cols-[1fr_140px] sm:grid-cols-[1fr_210px]">
+          <div class="p-6 lg:p-7">
+            <div class="inline-flex items-center gap-2 rounded-full bg-amber/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-amber">Plato del día</div>
+            <h3 class="mt-3 font-serif text-[25px] leading-tight emboss">Carne al horno con papas</h3>
+            <p class="mt-2 text-[13px] text-cream/50">Cocción lenta, papas rústicas y jugo reducido de la casa.</p>
+            <div class="mt-4 flex items-end gap-3">
+              <span class="text-cream/35 line-through">$15.000</span>
+              <span class="font-serif text-[32px] text-amber emboss">$10.000</span>
+            </div>
+            <button class="mt-5 rounded-xl bg-amber px-6 py-2.5 text-[13px] font-semibold text-espresso transition hover:brightness-95">Agregar</button>
+          </div>
+          <div class="foodA relative">
+            <div class="absolute inset-0 grid place-items-center text-6xl drop-shadow-2xl">🍖</div>
+            <div class="absolute inset-0 bg-gradient-to-l from-transparent to-black/25"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROMOS -->
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div class="panel-soft lift rounded-2xl p-4">
+          <div class="text-[10px] uppercase tracking-[0.2em] text-sagey">Semana</div>
+          <div class="mt-1 font-serif text-[16px] leading-tight">Milanesa completa</div>
+          <div class="mt-2 text-sm text-amber">$10.500</div>
+        </div>
+        <div class="panel-soft lift rounded-2xl p-4">
+          <div class="text-[10px] uppercase tracking-[0.2em] text-sagey">Docena</div>
+          <div class="mt-1 font-serif text-[16px] leading-tight">Empanadas de carne</div>
+          <div class="mt-2 text-sm text-amber">$8.400</div>
+        </div>
+        <div class="panel-soft lift col-span-2 rounded-2xl p-4 sm:col-span-1">
+          <div class="text-[10px] uppercase tracking-[0.2em] text-sagey">Combo</div>
+          <div class="mt-1 font-serif text-[16px] leading-tight">Pasta + postre</div>
+          <div class="mt-2 text-sm text-amber">$12.900</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="space-y-5">
+      <section class="panel rounded-[28px] p-6">
+        <div class="flex items-center justify-between">
+          <h2 class="font-serif text-[20px] emboss">Menú de hoy</h2>
+          <a href="#" class="text-[12px] text-amber">Ver todo</a>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button class="rounded-full bg-cream/90 px-3 py-1.5 text-[12px] font-medium text-espresso">Principales</button>
+          <button class="panel-soft rounded-full px-3 py-1.5 text-[12px] text-cream/60">Pastas</button>
+          <button class="panel-soft rounded-full px-3 py-1.5 text-[12px] text-cream/60">Empanadas</button>
+          <button class="panel-soft rounded-full px-3 py-1.5 text-[12px] text-cream/60">Pizza</button>
+          <button class="panel-soft rounded-full px-3 py-1.5 text-[12px] text-cream/60">Sándwiches</button>
+        </div>
+
+        <div class="mt-5 space-y-3">
+          <div class="panel-soft lift flex items-center gap-4 rounded-2xl p-3">
+            <div class="foodB grid h-14 w-14 shrink-0 place-items-center rounded-xl text-2xl">🥩</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-serif text-[16px] leading-tight">Milanesa con puré</div>
+              <div class="text-[12px] text-cream/40">Napolitana +$800</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-semibold">$11.500</div>
+              <button class="mt-1 grid h-7 w-7 place-items-center rounded-lg bg-amber text-espresso">+</button>
+            </div>
+          </div>
+          <div class="panel-soft lift flex items-center gap-4 rounded-2xl p-3">
+            <div class="foodC grid h-14 w-14 shrink-0 place-items-center rounded-xl text-2xl">🍝</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-serif text-[16px] leading-tight">Canelones de verdura</div>
+              <div class="text-[12px] text-cream/40">Porción doble</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-semibold">$9.800</div>
+              <button class="mt-1 grid h-7 w-7 place-items-center rounded-lg bg-amber text-espresso">+</button>
+            </div>
+          </div>
+          <div class="panel-soft lift flex items-center gap-4 rounded-2xl p-3">
+            <div class="foodD grid h-14 w-14 shrink-0 place-items-center rounded-xl text-2xl">🥟</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-serif text-[16px] leading-tight">Empanadas surtidas ×6</div>
+              <div class="text-[12px] text-cream/40">Carne, pollo, J&Q</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-semibold">$7.200</div>
+              <button class="mt-1 grid h-7 w-7 place-items-center rounded-lg bg-amber text-espresso">+</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 rounded-2xl border border-dashed border-white/12 p-3 opacity-45">
+            <div class="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-white/5 text-2xl grayscale">🍕</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-serif text-[16px] leading-tight">Pizza muzzarella</div>
+              <div class="text-[12px] text-cream/40">Agotada por hoy</div>
+            </div>
+            <span class="text-[11px] uppercase tracking-widest text-cream/35">Sin stock</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel rounded-[28px] p-6">
+        <div class="flex items-center justify-between text-[13px]">
+          <span class="text-cream/45">Entregás en</span>
+          <a href="#" class="text-amber">Cambiar</a>
+        </div>
+        <div class="mt-1 font-serif text-[17px]">Oficina · Av. Boedo 1240</div>
+        <div class="mt-3 flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-[12px] text-cream/60">
+          <span class="text-sagey">✓ Dentro de cobertura · 2,3 km</span>
+          <span>Envío $1.500</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- STICKY CART -->
+  <div class="sticky bottom-4 mt-6">
+    <div class="panel mx-auto flex max-w-[720px] items-center justify-between rounded-2xl px-5 py-3.5">
+      <div>
+        <div class="text-[11px] uppercase tracking-[0.2em] text-cream/40">Tu pedido · 3 ítems</div>
+        <div class="font-serif text-[20px] emboss">$31.800 <span class="text-[12px] font-sans text-cream/40">+ envío</span></div>
+      </div>
+      <button class="rounded-xl bg-amber px-6 py-3 text-[13px] font-semibold text-espresso transition hover:brightness-95">Confirmar pedido</button>
+    </div>
+  </div>
+
+  <nav class="mt-4 grid grid-cols-5 rounded-2xl panel-soft py-2 text-[11px] text-cream/45 lg:hidden">
+    <a class="flex flex-col items-center gap-1 py-2 text-cream"><span>◈</span>Inicio</a>
+    <a class="flex flex-col items-center gap-1 py-2"><span>☰</span>Menú</a>
+    <a class="flex flex-col items-center gap-1 py-2"><span>◐</span>Carrito</a>
+    <a class="flex flex-col items-center gap-1 py-2"><span>◇</span>Pedidos</a>
+    <a class="flex flex-col items-center gap-1 py-2"><span>○</span>Cuenta</a>
+  </nav>
+</div>
+
+<script>
+  const target = new Date(); target.setHours(12,0,0,0);
+  if (target < new Date()) target.setTime(Date.now() + (1*3600+42*60+15)*1000);
+  const h1=document.getElementById('h'),m1=document.getElementById('m'),s1=document.getElementById('s');
+  function tick(){ let d=Math.max(0,(target-new Date())/1000|0);
+    h1.textContent=String(d/3600|0).padStart(2,'0');
+    m1.textContent=String((d%3600)/60|0).padStart(2,'0');
+    s1.textContent=String(d%60).padStart(2,'0'); }
+  tick(); setInterval(tick,1000);
+</script>
+</body>
+</html>

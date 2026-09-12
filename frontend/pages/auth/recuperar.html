@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recuperar contraseña · Morfi Center</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Caveat:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Dev: Tailwind CDN + config compartida. Prod: /assets/css/tailwind.css -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/tailwind.config.js"></script>
+<link rel="stylesheet" href="/assets/css/base.css" />
+</head>
+<body class="font-sans text-bark antialiased">
+
+<div class="mx-auto flex min-h-screen max-w-[1200px] flex-col items-center justify-center px-4 py-10 lg:px-10">
+
+  <a href="/index.html" class="mb-8 flex items-center gap-3">
+    <span class="blob grid h-11 w-11 place-items-center bg-forest font-display text-lg font-bold text-cream" aria-hidden="true">M</span>
+    <span class="leading-none">
+      <span class="block font-display text-xl font-bold">Morfi Center</span>
+      <span class="block font-hand text-[15px] text-brick">cocina de olla, todos los días</span>
+    </span>
+  </a>
+
+  <div class="paper relative w-full max-w-[440px] overflow-hidden rounded-[26px] border border-bark/10 p-6 lg:p-8">
+    <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-[26px]">
+      <div class="blob absolute -right-16 -top-16 h-48 w-48 bg-forest/10"></div>
+      <div class="blob2 absolute -bottom-20 -left-14 h-44 w-44 bg-mustard/15"></div>
+    </div>
+
+    <div class="relative">
+
+      <!-- ═══ Paso 1 · pedir el link (sin ?token=) ═══ -->
+      <section data-step="request">
+        <h1 class="font-display text-[26px] font-bold leading-tight">Recuperar contraseña</h1>
+        <p class="mt-1 font-hand text-[16px] text-brick">te mandamos cómo seguir</p>
+
+        <form id="forgot-form" class="mt-6 space-y-4" novalidate>
+          <div>
+            <label for="email" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required
+                   class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                   placeholder="vos@ejemplo.com" />
+          </div>
+
+          <p data-error="forgot-form" class="hidden rounded-xl border-2 border-brick/30 bg-brick/8 px-4 py-3 text-[13px] text-brick" role="alert"></p>
+
+          <button type="submit" data-submit-forgot
+                  class="blob w-full bg-forest px-6 py-3 text-[13px] font-semibold text-cream transition hover:bg-bark disabled:cursor-not-allowed disabled:opacity-60">
+            Enviar instrucciones
+          </button>
+        </form>
+
+        <!-- Confirmación (mensaje neutro: no revela si el email existe) -->
+        <div data-forgot-done hidden class="mt-2 rounded-xl border-2 border-forest/25 bg-forest/8 p-4 text-[13px] text-bark/70">
+          <p>Si ese email tiene una cuenta, ya salieron las instrucciones para cambiar la contraseña.</p>
+          <p class="mt-2 text-[12px] text-bark/50">
+            Entorno de desarrollo: todavía no hay envío de mail — el link de reseteo queda
+            logueado en la consola del backend (<code class="rounded bg-bark/8 px-1">uvicorn</code>).
+          </p>
+        </div>
+      </section>
+
+      <!-- ═══ Paso 2 · nueva contraseña (con ?token=) ═══ -->
+      <section data-step="reset" hidden>
+        <h1 class="font-display text-[26px] font-bold leading-tight">Elegí tu nueva contraseña</h1>
+        <p class="mt-1 font-hand text-[16px] text-brick">último paso</p>
+
+        <form id="reset-form" class="mt-6 space-y-4" novalidate>
+          <div>
+            <label for="password" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Nueva contraseña</label>
+            <input id="password" name="password" type="password" autocomplete="new-password" required
+                   class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                   placeholder="mínimo 8 caracteres" />
+            <p data-error="password" class="mt-1 hidden text-[12px] text-brick"></p>
+          </div>
+
+          <div>
+            <label for="password_confirm" class="mb-1.5 block text-[11px] uppercase tracking-widest text-bark/45">Repetir contraseña</label>
+            <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" required
+                   class="w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[15px] placeholder-bark/35 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/15"
+                   placeholder="repetila" />
+            <p data-error="password_confirm" class="mt-1 hidden text-[12px] text-brick"></p>
+          </div>
+
+          <p data-error="reset-form" class="hidden rounded-xl border-2 border-brick/30 bg-brick/8 px-4 py-3 text-[13px] text-brick" role="alert"></p>
+
+          <button type="submit" data-submit-reset
+                  class="blob w-full bg-forest px-6 py-3 text-[13px] font-semibold text-cream transition hover:bg-bark disabled:cursor-not-allowed disabled:opacity-60">
+            Cambiar contraseña
+          </button>
+        </form>
+
+        <div data-reset-done hidden class="mt-2 rounded-xl border-2 border-forest/25 bg-forest/8 p-4 text-[13px] text-bark/70">
+          <p>Listo, tu contraseña cambió. Ya podés iniciar sesión con la nueva.</p>
+        </div>
+      </section>
+
+      <p class="mt-6 text-center text-[13px] text-bark/55">
+        <a href="/pages/auth/login.html" class="font-hand text-[16px] text-brick">← Volver a iniciar sesión</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/assets/js/pages/recuperar.js"></script>
+</body>
+</html>

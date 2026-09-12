@@ -1,0 +1,21 @@
+<!-- Parcial: navegación inferior (solo móvil, rol cliente). FIJA al viewport.
+     Se inyecta en <div data-partial="bottom-nav">. `ui.js` marca el activo.
+     Requiere `pb-[84px] lg:pb-0` en <body> para que el contenido no quede tapado. -->
+<nav class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t-2 border-bark/12 bg-cream py-2 text-[11px] text-bark/45 shadow-[0_-8px_24px_-14px_rgba(59,46,34,0.3)] lg:hidden"
+     aria-label="Navegación">
+  <a class="flex flex-col items-center gap-1 py-2 transition" href="/index.html">
+    <span aria-hidden="true" class="text-base">◈</span>Inicio
+  </a>
+  <a class="flex flex-col items-center gap-1 py-2 transition" href="/pages/cliente/menu.html">
+    <span aria-hidden="true" class="text-base">☰</span>Olla
+  </a>
+  <a class="flex flex-col items-center gap-1 py-2 transition" href="/pages/cliente/carrito.html">
+    <span aria-hidden="true" class="text-base">🧺</span>Vianda
+  </a>
+  <a class="flex flex-col items-center gap-1 py-2 transition" href="/pages/cliente/pedidos.html">
+    <span aria-hidden="true" class="text-base">◇</span>Pedidos
+  </a>
+  <a class="flex flex-col items-center gap-1 py-2 transition" href="/pages/cliente/perfil.html">
+    <span aria-hidden="true" class="text-base">○</span>Cuenta
+  </a>
+</nav>
