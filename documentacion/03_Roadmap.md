@@ -102,9 +102,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `.gitignore` con `backend/data/*` + `!backend/data/.gitkeep`, `backend/storage/payment_proofs/*` + `!backend/storage/payment_proofs/.gitkeep` (se ignora el contenido, no la carpeta, para que el `.gitkeep` de T-0.1.1 quede versionado), `backend/.env`, `__pycache__/`, `*.pyc`, `.venv/`, `frontend/assets/css/tailwind.css`. Crear `README.md` mínimo del proyecto (qué es, stack, cómo se arranca en local — ver `02_Documento_Tecnico.md §24.2`).
   _Prueba:_ `git status` no lista datos ni entorno; `backend/data/.gitkeep` y `backend/storage/payment_proofs/.gitkeep` siguen versionados. _Depende de:_ T-0.1.1
 
-- [ ] **T-0.1.3 · [Infra] `requirements.txt` y `pyproject.toml`**
-  `requirements.txt`: fastapi, uvicorn[standard], sqlalchemy, alembic, pydantic, pydantic-settings, passlib[bcrypt], pyjwt, authlib, httpx, python-multipart, slowapi. `pyproject.toml` con config de ruff, black (line 100) y pytest.
-  _Prueba:_ `pip install -r requirements.txt` sin errores en un venv limpio. _Depende de:_ T-0.1.1
+- [x] **T-0.1.3 · [Infra] `requirements.txt` y `pyproject.toml`**
+  `requirements.txt`: fastapi, uvicorn[standard], sqlalchemy, alembic, pydantic, pydantic-settings, **bcrypt** (no `passlib[bcrypt]`: se probó al armar esta tarea y `passlib` 1.7.4, sin mantenimiento desde 2020, rompe con `bcrypt` ≥ 4.1 — se usa `bcrypt` directo, ver `02_Documento_Tecnico.md §2`), pyjwt, authlib, httpx, python-multipart, slowapi, **pytest, pytest-asyncio, ruff, black** (estas 4 últimas hacían falta para que la config de `pyproject.toml` sirva de algo — no estaban en versiones anteriores de esta tarea). `pyproject.toml` con config de ruff, black (line 100) y pytest (incluye `asyncio_mode` para los tests con `httpx.AsyncClient` de §22).
+  _Prueba:_ `pip install -r requirements.txt` sin errores en un venv limpio; `python -c "import fastapi, pytest, ruff, bcrypt"` no falla; un hash+verify de prueba con `bcrypt` funciona. _Depende de:_ T-0.1.1
   > **Nota (Fase 2):** originalmente incluía `apscheduler` — se sacó al decidir que turnos y reservas se resuelven bajo demanda, sin tareas programadas (ver `02_Documento_Tecnico.md` §10).
 
 ## Tema 0.2 · Esqueleto del backend
@@ -250,7 +250,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   _Prueba:_ tests unitarios de cada regla (válidos e inválidos). _Depende de:_ T-0.2.2
 
 - [ ] **T-1.1.2 · [Lógica] Hash y verificación de contraseñas**
-  `core/security.py`: `hash_password`, `verify_password` con passlib/bcrypt (coste ≥ 12).
+  `core/security.py`: `hash_password`, `verify_password` con `bcrypt` directo (`rounds` ≥ 12).
   _Prueba:_ test: `verify_password(p, hash_password(p))` True; contraseña distinta False; el hash no es el texto plano. _Depende de:_ T-0.1.3
 
 - [ ] **T-1.1.3 · [Lógica] Emisión y verificación de JWT**

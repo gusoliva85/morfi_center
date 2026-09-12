@@ -69,7 +69,7 @@ Premisas fijas del proyecto:
 | Migraciones | **Alembic** | Versionado del esquema |
 | Base de datos | **SQLite** (archivo local) | Requisito. `PRAGMA foreign_keys=ON`, modo **WAL**, `busy_timeout` |
 | Validación / schemas | **Pydantic v2** | Entrada/salida de la API, settings |
-| Hash de contraseñas | **passlib[bcrypt]** | Estándar, con sal |
+| Hash de contraseñas | **bcrypt** (librería directa, sin passlib) | `passlib` está sin mantenimiento desde 2020 y no es compatible con `bcrypt` ≥ 4.1 (bug verificado al instalar: `AttributeError`/`ValueError` al hashear). Se usa `bcrypt` directo — más simple, sin la capa de abstracción multi-esquema que no hace falta (solo se usa bcrypt) |
 | Tokens | **PyJWT** (o `python-jose`) | JWT access + refresh |
 | OAuth Google | **Authlib** | Cliente OAuth2 / OIDC |
 | HTTP client (servicios externos) | **httpx** | Geocodificación, etc. |
@@ -1397,7 +1397,7 @@ El sobrante de ancho en escritorio se resuelve **con más columnas**, no con má
 
 | Tema | Medida |
 |---|---|
-| Contraseñas | bcrypt (passlib), factor de coste ≥ 12. Nunca en logs. |
+| Contraseñas | bcrypt (librería directa), factor de coste (`rounds`) ≥ 12. Nunca en logs. |
 | JWT | `JWT_SECRET` fuerte en `.env`; access corto; refresh httpOnly + rotación/revocación. |
 | Autorización | Siempre en backend (`require_role` + verificación de propiedad). El front no es barrera. |
 | Comprobantes | Fuera de `static`; nombre `uuid4`; descarga solo por endpoint con auth y verificación de propiedad/rol; `Content-Disposition: attachment`. |
