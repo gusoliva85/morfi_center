@@ -139,7 +139,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `create_engine(settings.database_url, connect_args={"check_same_thread": False})`, listener que aplica `PRAGMA foreign_keys=ON`, `journal_mode=WAL`, `busy_timeout=5000`. `SessionLocal` y `get_session()` (commit/rollback/close). Crea `backend/data/` si falta.
   _Prueba:_ script que abre sesión y ejecuta `PRAGMA foreign_keys` → `1`. _Depende de:_ T-0.2.1
 
-- [ ] **T-0.3.2 · [Backend] `db/base.py` — DeclarativeBase**
+- [x] **T-0.3.2 · [Backend] `db/base.py` — DeclarativeBase**
   `class Base(DeclarativeBase): ...` con convención de nombres de constraints/índices. Módulo que importa todos los modelos (se irá completando fase a fase).
   _Prueba:_ importar `Base` sin errores. _Depende de:_ T-0.3.1
 
