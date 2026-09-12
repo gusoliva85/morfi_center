@@ -129,8 +129,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Helpers `now_utc()`, `to_local(dt)`, `resolve_shift_instant(date, "HH:MM")` usando `zoneinfo` y `APP_TIMEZONE`. Agregar **`tzdata`** a `requirements.txt`: se verificó que en Windows `zoneinfo.ZoneInfo("America/Argentina/Buenos_Aires")` falla con `ZoneInfoNotFoundError` sin ese paquete (Windows no trae la base IANA integrada) — sin él, cualquiera desarrollando en Windows tendría el backend roto desde este punto.
   _Prueba:_ tests: `resolve_shift_instant("2026-09-10","12:00")` da el instante UTC correcto para Buenos Aires. _Depende de:_ T-0.2.1
 
-- [ ] **T-0.2.6 · [Backend] `main.py` — app FastAPI + healthcheck**
-  Crea la app, registra handlers de error, middleware de `request_id`, CORS (dev: `FRONTEND_ORIGIN`), prefija routers en `/api/v1`. Endpoint `GET /api/v1/health` → `{"status":"ok","env":...}`. `lifespan` mínimo (arranque/apagado, sin scheduler — ver nota de Fase 2 en `Tema 2.3`).
+- [x] **T-0.2.6 · [Backend] `main.py` — app FastAPI + healthcheck**
+  Crea la app, registra handlers de error, middleware de `request_id`, CORS (dev: `FRONTEND_ORIGIN`), prefija routers en `/api/v1`. Endpoint `GET /api/v1/health` → `{"status":"ok","env":...}`. `lifespan` mínimo (arranque/apagado, sin scheduler — ver `02_Documento_Tecnico.md §10`, resolución bajo demanda).
   _Prueba:_ `uvicorn app.main:app` y `GET /api/v1/health` responde 200. `GET /api/docs` abre Swagger. _Depende de:_ T-0.2.3, T-0.2.4
 
 ## Tema 0.3 · Base de datos y migraciones
