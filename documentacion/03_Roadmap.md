@@ -193,8 +193,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Archivo de usuarios de prueba (tabla rol / email / password / notas). Se completa cuando el seed de la Fase 1 los genere (`T-1.10.1`).
   _Prueba:_ el archivo existe y está enlazado desde este roadmap. _Depende de:_ —
 
-- [ ] **T-0.6.2 · [Docs] Plantilla `Fase 0X - <nombre>.md`**
-  Definir el esqueleto que tendrán los documentos de cierre de fase (objetivo, temas, qué se hizo y cómo quedó explicado con código y en palabras, cómo probar), guardados en `documentacion/Fases/`.
+- [x] **T-0.6.2 · [Docs] Plantilla `Fase 0X - <nombre>.md`**
+  Definir el esqueleto que tendrán los documentos de cierre de fase (objetivo, temas, qué se hizo y cómo quedó explicado con código y en palabras, cómo probar), guardados en `documentacion/Fases/`. Creada en `documentacion/Fases/_Plantilla_Fase.md`.
   _Prueba:_ plantilla acordada con el usuario. _Depende de:_ —
 
 ## Tema 0.7 · Despliegue: Vercel (frontend) + VPS Contabo (backend y base de datos)
