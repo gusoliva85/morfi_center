@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sandbox — base.css (T-0.4.1)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../assets/css/base.css" />
+</head>
+<body class="bg-[#E9DFC9] p-8 font-sans text-[#3B2E22]">
+
+<h1 class="mb-1 text-2xl font-bold">Utilidades del sistema — Artesanal · Cocina de Olla</h1>
+<p class="mb-8 text-sm text-black/50">T-0.4.1 · Página de prueba, no forma parte del producto final.</p>
+
+<section class="mb-10">
+  <h2 class="mb-2 font-semibold">.paper</h2>
+  <div class="paper h-24 w-64 rounded-2xl border border-black/10"></div>
+</section>
+
+<section class="mb-10 flex flex-wrap gap-8">
+  <div>
+    <h2 class="mb-2 font-semibold">.blob</h2>
+    <div class="blob h-24 w-24 bg-[#2F5D3A]/30"></div>
+  </div>
+  <div>
+    <h2 class="mb-2 font-semibold">.blob2</h2>
+    <div class="blob2 h-24 w-24 bg-[#D69A2D]/30"></div>
+  </div>
+</section>
+
+<section class="mb-10">
+  <h2 class="mb-2 font-semibold">.stamp</h2>
+  <div class="stamp inline-block rounded-md px-3 py-1 font-bold text-[#B0472F]">Plato del día</div>
+</section>
+
+<section class="mb-10 w-72">
+  <h2 class="mb-2 font-semibold">.tape + .dashed</h2>
+  <div class="relative mt-6 rounded-2xl border-2 border-dashed border-black/25 bg-[#F6EFDD] px-6 py-5">
+    <span class="tape"></span>
+    <p>Ticket de cuenta regresiva</p>
+    <div class="dashed mt-3"></div>
+    <p class="mt-2 text-xs text-black/50">línea perforada</p>
+  </div>
+</section>
+
+<section class="mb-10">
+  <h2 class="mb-2 font-semibold">.foodA .. .foodD</h2>
+  <div class="flex gap-4">
+    <div class="foodA h-20 w-20 rounded-xl"></div>
+    <div class="foodB h-20 w-20 rounded-xl"></div>
+    <div class="foodC h-20 w-20 rounded-xl"></div>
+    <div class="foodD h-20 w-20 rounded-xl"></div>
+  </div>
+</section>
+
+<section class="mb-10">
+  <h2 class="mb-2 font-semibold">.lift — pasá el mouse por la card</h2>
+  <div class="lift w-64 rounded-2xl border-2 border-black/10 bg-[#F6EFDD] p-4">
+    Card de prueba — hover acá
+  </div>
+</section>
+
+<section class="max-w-md">
+  <h2 class="mb-2 font-semibold">prefers-reduced-motion</h2>
+  <p class="text-sm text-black/60">
+    Con "reducir movimiento" activado en el sistema operativo, la card de
+    arriba no debería desplazarse al pasar el mouse (solo queda estática).
+  </p>
+</section>
+
+</body>
+</html>

@@ -155,7 +155,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 > Nota (histórico de la decisión de estilo): la elección original del proyecto fue `01_Editorial_Premium.html`. El 2026-09-10 se migró a **"Artesanal · Cocina de Olla"** (`mockups/04_Artesanal_Organico.html`), que es el estilo **confirmado y vigente**. El 2026-09-11, al retomar el proyecto en un chat nuevo, hubo una confusión momentánea que revirtió por error toda la documentación a Editorial Premium; se corrigió el mismo día y quedó definitivamente en **Artesanal · Cocina de Olla**. Además, el código de `backend/` y `frontend/` (Fases 0-2) se reinició desde cero, por lo que todas las tareas de Fases 0-2 vuelven a `[ ]` y se re-implementan y re-validan contra el sistema Artesanal · Cocina de Olla.
 
-- [ ] **T-0.4.1 · [Frontend] `assets/css/base.css` — utilidades del sistema**
+- [x] **T-0.4.1 · [Frontend] `assets/css/base.css` — utilidades del sistema**
   Declarar `.paper`, `.blob`/`.blob2`, `.stamp`, `.tape`, `.dashed`, `.lift`, `.foodA..D` y el media query de `prefers-reduced-motion` (según skill `morfi-frontend`).
   _Prueba:_ una página de test muestra las utilidades y una card con hover `.lift`. _Depende de:_ —
 
