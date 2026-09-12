@@ -94,7 +94,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 0.1 · Estructura del repositorio
 
-- [~] **T-0.1.1 · [Infra] Crear el árbol de carpetas del proyecto**
+- [x] **T-0.1.1 · [Infra] Crear el árbol de carpetas del proyecto**
   Crear `backend/app/{core,db,models,schemas,repositories,services,services/external,api,api/routes}`, `backend/tests/{unit,api}`, `backend/data`, `backend/storage/payment_proofs`, `frontend/{pages/{auth,cliente,admin,delivery},partials,assets/{css,js,js/pages,img}}`, `documentacion/Fases`, `deploy`, `.github/workflows`. Agregar `.gitkeep` en las vacías. `backend/alembic/` no se crea acá: lo genera `alembic init` en T-0.3.3 (crearlo antes rompería ese comando). No se crea `backend/app/jobs/`: el proyecto no tiene procesos de fondo (ver `02_Documento_Tecnico.md §10`) — la mención a `jobs` en versiones anteriores de esta tarea era un resabio de antes de esa decisión.
   _Prueba:_ el árbol coincide con `02_Documento_Tecnico.md §4`. _Depende de:_ —
 
