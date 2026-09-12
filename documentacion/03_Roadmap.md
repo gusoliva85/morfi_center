@@ -167,8 +167,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   HTML de los parciales en `frontend/partials/` según las recetas de la skill. `assets/js/ui.js` con `injectPartials()` (fetch + innerHTML) y helpers (`$`, `toast`).
   _Prueba:_ una página incluye los parciales vía `ui.js` y se ven bien en móvil y escritorio. _Depende de:_ T-0.4.2
 
-- [ ] **T-0.4.4 · [Frontend] `index.html` — Home del cliente (solo estilo)**
-  Portar el mockup `04_Artesanal_Organico.html` a la estructura real: header + nav adaptativa, chip de estado, countdown (ticket de kraft, estático), Plato del Día (sello), promos, chips de categoría, lista de productos con un ítem "sin stock", panel de dirección, barra de carrito, bottom nav. **Todo con datos hardcodeados**, sin fetch.
+- [x] **T-0.4.4 · [Frontend] `index.html` — Home del cliente (solo estilo)**
+  Portar el mockup `04_Artesanal_Organico.html` a la estructura real, usando los parciales de T-0.4.3 (`header`, `cart-bar`, `bottom-nav` vía `data-partial`): chip de estado, countdown (ticket de kraft, estático), Plato del Día (sello), promos, chips de categoría, lista de productos con un ítem "sin stock", panel de dirección. **Todo con datos hardcodeados**, sin fetch. **Fotos reales en vez de emoji/gradiente**: el usuario proveyó 9 fotos de platos (`documentacion/platos_test/`, copiadas a `frontend/assets/img/platos/`) — se usan en el Plato del Día y en 8 ítems del menú (uno marcado "sin stock"), reemplazando los placeholders `.foodA..D` + emoji del mockup original.
   _Prueba:_ a 360px se ve la versión móvil con bottom nav; a 1440px el layout cambia (nav arriba, grilla, sin elementos estirados). _Depende de:_ T-0.4.3
 
 - [ ] **T-0.4.5 · [Frontend] `assets/js/format.js`**
