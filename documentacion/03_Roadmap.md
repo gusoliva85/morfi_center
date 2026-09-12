@@ -117,7 +117,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Todos los enums de `02_Documento_Tecnico.md §7` como `class X(str, Enum)` — 18 en total, incluyendo `AssignmentStatus`, `StopStatus` y `SettingValueType` (se agregaron a §7 al armar esta tarea: existían como `CHECK` en el modelo físico de §6 pero no estaban en el catálogo de enums).
   _Prueba:_ test que importa y verifica valores. _Depende de:_ T-0.1.1
 
-- [ ] **T-0.2.3 · [Backend] `core/errors.py` — excepciones de dominio + handlers**
+- [x] **T-0.2.3 · [Backend] `core/errors.py` — excepciones de dominio + handlers**
   `DomainError` base y subclases (`NotFoundError`, `ForbiddenError`, `ConflictError`, `OutOfStockError`, `ShiftClosedError`, `CancelWindowClosedError`, `OutOfCoverageError`, `InvalidTransitionError`). Handler global que las mapea al formato `{"error":{"code","message","details"}}` (§20).
   _Prueba:_ test de API que fuerza un `NotFoundError` y valida el JSON y el status. _Depende de:_ T-0.2.1
 
