@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sandbox — parciales + ui.js (T-0.4.3)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Caveat:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { display:['Bricolage Grotesque','system-ui','sans-serif'], hand:['Caveat','cursive'], sans:['Inter','system-ui','sans-serif'] },
+    colors: { kraft:'#E9DFC9', cream:'#F6EFDD', bark:'#3B2E22', forest:'#2F5D3A', mustard:'#D69A2D', brick:'#B0472F' },
+  }}};
+</script>
+<link rel="stylesheet" href="../assets/css/base.css" />
+</head>
+<body class="bg-kraft font-sans text-bark antialiased">
+
+<div class="mx-auto max-w-[1200px] px-4 py-6 lg:py-10">
+  <p class="mb-4 text-center text-[11px] uppercase tracking-[0.3em] text-bark/40">
+    Sandbox T-0.4.3 · header + top-nav + bottom-nav + cart-bar inyectados vía ui.js
+  </p>
+
+  <div class="paper relative overflow-hidden rounded-[34px] border border-bark/10">
+    <div class="blob pointer-events-none absolute -right-24 -top-24 h-72 w-72 bg-forest/10"></div>
+    <div class="blob2 pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 bg-mustard/15"></div>
+
+    <header class="relative flex items-center justify-between px-5 pt-6 lg:px-10 lg:pt-8" data-partial="header"></header>
+
+    <div class="px-5 py-16 text-center text-sm text-bark/40 lg:px-10">
+      (el contenido real de la Home llega en T-0.4.4 — esta página solo prueba
+      que header, top-nav, bottom-nav y cart-bar se inyectan y se ven bien)
+    </div>
+
+    <div data-partial="cart-bar"></div>
+    <div data-partial="bottom-nav"></div>
+  </div>
+
+  <p class="mt-4 text-center text-[11px] text-bark/35">Redimensioná la ventana: el nav de arriba (desktop) y el de abajo (móvil) se alternan en el breakpoint lg.</p>
+</div>
+
+<script type="module">
+  import { injectPartials, toast } from "../assets/js/ui.js";
+
+  await injectPartials();
+
+  document.querySelector("[data-confirm-order]")?.addEventListener("click", () => {
+    toast("Botón de prueba — la confirmación real llega en Fase 9");
+  });
+</script>
+</body>
+</html>
