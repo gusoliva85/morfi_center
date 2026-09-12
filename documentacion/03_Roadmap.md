@@ -109,7 +109,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 0.2 · Esqueleto del backend
 
-- [ ] **T-0.2.1 · [Backend] `core/config.py` — Settings**
+- [x] **T-0.2.1 · [Backend] `core/config.py` — Settings**
   `Settings(BaseSettings)` con las variables de `02_Documento_Tecnico.md §19` (APP_ENV, APP_TIMEZONE, DATABASE_URL, JWT_*, GOOGLE_*, GEOCODING_*, STORAGE_DIR, etc.). Exponer `settings` singleton. Crear `backend/.env.example`.
   _Prueba:_ `python -c "from app.core.config import settings; print(settings.app_name)"`. _Depende de:_ T-0.1.3
 
