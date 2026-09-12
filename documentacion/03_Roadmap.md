@@ -189,8 +189,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 0.6 · Documentación viva
 
-- [ ] **T-0.6.1 · [Docs] `documentacion/Usuarios.md`**
-  Archivo de usuarios de prueba (tabla rol / email / password / notas). *(Ya creado; se completa cuando el seed de la Fase 1 los genere.)*
+- [x] **T-0.6.1 · [Docs] `documentacion/Usuarios.md`**
+  Archivo de usuarios de prueba (tabla rol / email / password / notas). Se completa cuando el seed de la Fase 1 los genere (`T-1.10.1`).
   _Prueba:_ el archivo existe y está enlazado desde este roadmap. _Depende de:_ —
 
 - [ ] **T-0.6.2 · [Docs] Plantilla `Fase 0X - <nombre>.md`**
