@@ -113,8 +113,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `Settings(BaseSettings)` con las variables de `02_Documento_Tecnico.md §19` (APP_ENV, APP_TIMEZONE, DATABASE_URL, JWT_*, GOOGLE_*, GEOCODING_*, STORAGE_DIR, etc.). Exponer `settings` singleton. Crear `backend/.env.example`.
   _Prueba:_ `python -c "from app.core.config import settings; print(settings.app_name)"`. _Depende de:_ T-0.1.3
 
-- [ ] **T-0.2.2 · [Backend] `core/enums.py`**
-  Todos los enums de `02_Documento_Tecnico.md §7` como `class X(str, Enum)`.
+- [x] **T-0.2.2 · [Backend] `core/enums.py`**
+  Todos los enums de `02_Documento_Tecnico.md §7` como `class X(str, Enum)` — 18 en total, incluyendo `AssignmentStatus`, `StopStatus` y `SettingValueType` (se agregaron a §7 al armar esta tarea: existían como `CHECK` en el modelo físico de §6 pero no estaban en el catálogo de enums).
   _Prueba:_ test que importa y verifica valores. _Depende de:_ T-0.1.1
 
 - [ ] **T-0.2.3 · [Backend] `core/errors.py` — excepciones de dominio + handlers**

@@ -725,6 +725,11 @@ CREATE INDEX ix_audit_entity ON audit_log(entity_type, entity_id);
 | `BalanceTxnType` | `credit`, `debit` |
 | `BalanceOrigin` | `cancellation`, `order_use`, `admin_adjustment` |
 | `NotificationType` | `order_created`, `proof_received`, `payment_approved`, `payment_rejected`, `order_cancelled`, `balance_credited`, `order_in_preparation`, `order_ready`, `order_out_for_delivery`, `order_delivered`, `delivery_incident`, `validation_critical` |
+| `AssignmentStatus` | `DRAFT`, `ASSIGNED`, `IN_PROGRESS`, `COMPLETED` |
+| `StopStatus` | `PENDING`, `ARRIVED`, `DELIVERED`, `INCIDENT` |
+| `SettingValueType` | `json`, `string`, `int`, `bool` |
+
+> `AssignmentStatus`, `StopStatus` y `SettingValueType` se agregan a este catálogo para que coincidan con los `CHECK` de `delivery_assignments.status`, `delivery_stops.status` y `system_settings.value_type` en §6 (no estaban listados en versiones anteriores de esta tabla, aunque sí existían como `CHECK` en el modelo físico).
 
 Se definen como `str, Enum` de Python en `app/core/enums.py` y se reutilizan en modelos, schemas y checks.
 
