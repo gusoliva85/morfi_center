@@ -121,7 +121,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `DomainError` base y subclases (`NotFoundError`, `ForbiddenError`, `ConflictError`, `OutOfStockError`, `ShiftClosedError`, `CancelWindowClosedError`, `OutOfCoverageError`, `InvalidTransitionError`). Handler global que las mapea al formato `{"error":{"code","message","details"}}` (§20).
   _Prueba:_ test de API que fuerza un `NotFoundError` y valida el JSON y el status. _Depende de:_ T-0.2.1
 
-- [ ] **T-0.2.4 · [Backend] `core/logging.py` y middleware de `request_id`**
+- [x] **T-0.2.4 · [Backend] `core/logging.py` y middleware de `request_id`**
   Logging stdlib; en `production` formato JSON. Middleware que asigna `X-Request-Id` y lo agrega a los logs.
   _Prueba:_ una request devuelve header `X-Request-Id` y aparece en el log. _Depende de:_ T-0.2.1
 
