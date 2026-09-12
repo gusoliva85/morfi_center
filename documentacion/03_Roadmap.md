@@ -175,8 +175,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `formatMoney(cents)` → `$00.000`, `formatDate`, `formatTime`, `pad2`. **`formatTime` fuerza `hour12: false`**: sin eso, `toLocaleTimeString("es-AR")` devuelve 12hs con sufijo (`"12:00 p. m."`) en vez de las 24hs que usa el resto del proyecto ("Cierre 12:00") — se detectó corriendo la función de verdad, no revisando el código a ojo.
   _Prueba:_ tests manuales en consola: `formatMoney(3180000) === "$31.800"`. _Depende de:_ —
 
-- [ ] **T-0.4.6 · [Frontend] `assets/js/api.js` y `auth.js` (esqueleto)**
-  `api.js` con el wrapper de `fetch` (baseURL, token en memoria, `tryRefresh`, `ApiError`) y `auth.js` con `setToken`/`bootstrapSession` (todavía sin backend de auth). Documentar `window.__MC_API__`.
+- [x] **T-0.4.6 · [Frontend] `assets/js/api.js` y `auth.js` (esqueleto)**
+  `api.js` con el wrapper de `fetch` (baseURL, token en memoria, `refreshSession`, `ApiError`) y `auth.js` con `setToken`/`bootstrapSession`/`login`/`logout`/`requireRole` (todavía sin backend de auth: `T-1.11.4` ya da por hecho que esto existe desde acá). Documentar `window.__MC_API__`. **Nota:** el §15.2/§15.3 nombraba la función privada de refresh `tryRefresh` en `api.js` pero `auth.js` importaba `refreshSession` — se unificó exportando una sola función, `refreshSession`.
   _Prueba:_ `api.get('/health')` desde la consola del navegador devuelve el JSON del backend. _Depende de:_ T-0.2.6, T-0.4.2
 
 ## Tema 0.5 · Tooling

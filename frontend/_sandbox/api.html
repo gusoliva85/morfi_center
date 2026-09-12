@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sandbox — api.js / auth.js (T-0.4.6)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#E9DFC9] p-8 font-sans text-[#3B2E22]">
+
+<h1 class="mb-2 text-2xl font-bold">api.js / auth.js — T-0.4.6</h1>
+<p class="mb-6 max-w-lg text-sm text-black/60">
+  Backend esperado en <code>http://localhost:8000</code> (<code>uvicorn app.main:app --port 8000</code>).
+  <code>window.api</code> y <code>window.auth</code> quedan expuestos para probar desde la consola,
+  por ejemplo: <code>await api.get('/health')</code>.
+</p>
+
+<pre id="output" class="max-w-lg whitespace-pre-wrap rounded-xl border border-black/10 bg-white/60 p-4 text-sm"></pre>
+
+<script>
+  // Dev: front en :5500, API en :8000 (02_Documento_Tecnico.md §17).
+  window.__MC_API__ = "http://localhost:8000/api/v1";
+</script>
+<script type="module">
+  import { api } from "../assets/js/api.js";
+  import * as auth from "../assets/js/auth.js";
+
+  // Para poder llamarlos a mano desde la consola del navegador.
+  window.api = api;
+  window.auth = auth;
+
+  const output = document.getElementById("output");
+  try {
+    const health = await api.get("/health");
+    output.textContent = "GET /health ->\n" + JSON.stringify(health, null, 2);
+  } catch (err) {
+    output.textContent = "Error llamando a /health:\n" + err;
+  }
+</script>
+</body>
+</html>
