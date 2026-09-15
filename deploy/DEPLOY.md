@@ -102,3 +102,42 @@ sudo ufw status
 - [ ] Intentar login por contraseña (o como `root`) es rechazado.
 - [ ] `sudo ufw status` muestra únicamente 22, 80 y 443 permitidos.
 - [ ] `apt upgrade` corrido sin errores.
+
+---
+
+## 2. Stack del servidor (T-0.7.2)
+
+### 2.1 Instalar Python, Nginx, Certbot y git
+
+Ya logueado como el usuario no-root (`morfi`):
+
+```bash
+sudo apt install -y python3 python3-venv python3-pip nginx certbot python3-certbot-nginx git
+```
+
+### 2.2 Verificar versiones
+
+```bash
+python3 --version
+nginx -v
+certbot --version
+```
+
+Se espera Python 3.11+ (Ubuntu 24.04 trae 3.12), Nginx y Certbot recientes.
+
+### 2.3 Clonar el repositorio
+
+El repo es **público**, así que no hace falta ninguna clave para clonarlo (si en algún momento pasa a privado, acá va a hacer falta una *deploy key* de solo lectura agregada en GitHub → Settings del repo → Deploy keys):
+
+```bash
+git clone https://github.com/gusoliva85/morfi_center.git ~/morfi_center
+cd ~/morfi_center
+ls
+```
+
+### Checklist de esta tarea (T-0.7.2)
+
+- [ ] `python3 --version`, `nginx -v` y `certbot --version` responden.
+- [ ] El repositorio queda clonado en el servidor con la misma estructura que en local.
+- [ ] `sudo ufw status` muestra únicamente 22, 80 y 443 permitidos.
+- [ ] `apt upgrade` corrido sin errores.

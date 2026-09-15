@@ -205,9 +205,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Usuario no-root dedicado con sudo; acceso SSH solo por clave pública/privada (deshabilitar login por contraseña); firewall `ufw` abierto solo a 22/80/443; actualizaciones del sistema. Runbook completo en `deploy/DEPLOY.md §1`. Dos gotchas reales encontrados y documentados ahí: el servicio se llama `ssh` (no `sshd`) en Ubuntu, y `/etc/ssh/sshd_config.d/50-cloud-init.conf` pisa `PasswordAuthentication` de `sshd_config` si no se corrige también.
   _Prueba:_ login SSH por clave funciona; login por contraseña rechazado; `ufw status` muestra solo los puertos esperados. **Verificado en el VPS real**: `ssh morfi@<IP>` entra sin contraseña; `ssh root@<IP>` rechaza inmediato con `Permission denied (publickey)`; `ufw status` muestra exactamente OpenSSH/80/443 (v4 y v6). _Depende de:_ —
 
-- [ ] **T-0.7.2 · [Infra] Stack del servidor**
-  Instalar Python 3.11+, `venv`, Nginx y Certbot en el VPS. Clonar el repositorio en el servidor (solo lectura de despliegue, sin credenciales de escritura innecesarias).
-  _Prueba:_ `python3 --version`, `nginx -v` y `certbot --version` responden en el servidor. _Depende de:_ T-0.7.1
+- [x] **T-0.7.2 · [Infra] Stack del servidor**
+  Instalar Python 3.11+, `venv`, Nginx y Certbot en el VPS. Clonar el repositorio en el servidor (solo lectura de despliegue, sin credenciales de escritura innecesarias). Runbook en `deploy/DEPLOY.md §2`. El repositorio es **público** (confirmado vía API de GitHub), así que el clonado no necesita ninguna credencial — si en el futuro pasa a privado, hace falta una *deploy key* de solo lectura.
+  _Prueba:_ `python3 --version`, `nginx -v` y `certbot --version` responden en el servidor. **Verificado en el VPS real:** Python 3.12.3, Nginx 1.24.0, Certbot 2.9.0; repo clonado en `~/morfi_center` con la estructura completa. _Depende de:_ T-0.7.1
 
 - [ ] **T-0.7.3 · [Infra] Servicio `systemd` + Nginx reverse proxy + HTTPS**
   `deploy/morficenter-api.service` corriendo Uvicorn con reinicio automático; `deploy/nginx.morficenter.conf` como reverse proxy hacia Uvicorn; certificado HTTPS con Certbot.
