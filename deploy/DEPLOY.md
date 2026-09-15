@@ -139,5 +139,72 @@ ls
 
 - [ ] `python3 --version`, `nginx -v` y `certbot --version` responden.
 - [ ] El repositorio queda clonado en el servidor con la misma estructura que en local.
-- [ ] `sudo ufw status` muestra únicamente 22, 80 y 443 permitidos.
-- [ ] `apt upgrade` corrido sin errores.
+
+---
+
+## 3. Servicio systemd + Nginx + HTTPS (T-0.7.3)
+
+> **Sin dominio propio:** Certbot/Let's Encrypt no emite certificados para una IP sola. Se usa [sslip.io](https://sslip.io) (gratis, sin registro): `<IP-con-guiones>.sslip.io` resuelve siempre a esa IP. Ej. `13.140.36.93` → `13-140-36-93.sslip.io`. Si en el futuro hay dominio propio, se reemplaza acá y se vuelve a correr Certbot para ese dominio.
+
+### 3.1 Backend: entorno virtual, `.env` de producción, migraciones
+
+```bash
+cd ~/morfi_center/backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env
+sed -i "s|^APP_ENV=.*|APP_ENV=production|" .env
+sed -i "s|^COOKIE_SAMESITE=.*|COOKIE_SAMESITE=none|" .env
+sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(python3 -c 'import secrets; print(secrets.token_hex(32))')|" .env
+# FRONTEND_ORIGIN se completa en T-0.7.6, cuando exista la URL real de Vercel.
+
+alembic upgrade head
+python -m app.db.seed
+```
+
+> El `sed` de `JWT_SECRET` genera el valor random **dentro** del propio comando — nunca se ve en pantalla ni queda en el historial como texto plano visible.
+
+### 3.2 Servicio `systemd`
+
+```bash
+sudo cp ~/morfi_center/deploy/morficenter-api.service /etc/systemd/system/morficenter-api.service
+sudo systemctl daemon-reload
+sudo systemctl enable morficenter-api
+sudo systemctl start morficenter-api
+sudo systemctl status morficenter-api --no-pager
+```
+
+Debe decir `Active: active (running)`.
+
+### 3.3 Nginx (reverse proxy)
+
+Reemplazar `13-140-36-93.sslip.io` por el hostname real de sslip.io de cada servidor:
+
+```bash
+sed "s|<SSLIP_HOSTNAME>|13-140-36-93.sslip.io|" ~/morfi_center/deploy/nginx.morficenter.conf | sudo tee /etc/nginx/sites-available/morficenter.conf > /dev/null
+sudo ln -sf /etc/nginx/sites-available/morficenter.conf /etc/nginx/sites-enabled/morficenter.conf
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 3.4 HTTPS con Certbot
+
+```bash
+sudo certbot --nginx -d 13-140-36-93.sslip.io
+```
+
+Pide un email de contacto (avisos de vencimiento) y aceptar los términos; ante "¿redirigir HTTP a HTTPS?" responder que sí. Certbot edita `sites-enabled/morficenter.conf` solo, agregando el bloque `443` y la redirección, y programa la renovación automática.
+
+### Gotchas reales encontrados en el primer despliegue
+
+- **`sudo` no funciona en un `ssh host "comando"` no interactivo** ("a terminal is required to read the password"). Todo lo que lleva `sudo` lo tiene que tipear la propia persona en una sesión interactiva — no se puede automatizar así (para eso está la automatización de `T-0.7.8`, con una regla `sudo` sin contraseña acotada a comandos puntuales).
+- **`nohup comando &` por SSH puede dejar la sesión colgada** aunque el proceso ya se haya desconectado bien — el canal SSH espera a que se cierren los file descriptors. No es un problema del proceso en sí, solo corta la sesión manualmente si pasa.
+
+### Checklist de esta tarea (T-0.7.3)
+
+- [ ] `sudo systemctl status morficenter-api` en verde (`active (running)`).
+- [ ] `curl https://<host-sslip>/api/v1/health` responde 200 con certificado válido (sin `-k`).
+- [ ] `http://<host-sslip>/...` redirige solo a `https://`.

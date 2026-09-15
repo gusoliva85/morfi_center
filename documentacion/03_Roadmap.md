@@ -209,13 +209,13 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Instalar Python 3.11+, `venv`, Nginx y Certbot en el VPS. Clonar el repositorio en el servidor (solo lectura de despliegue, sin credenciales de escritura innecesarias). Runbook en `deploy/DEPLOY.md §2`. El repositorio es **público** (confirmado vía API de GitHub), así que el clonado no necesita ninguna credencial — si en el futuro pasa a privado, hace falta una *deploy key* de solo lectura.
   _Prueba:_ `python3 --version`, `nginx -v` y `certbot --version` responden en el servidor. **Verificado en el VPS real:** Python 3.12.3, Nginx 1.24.0, Certbot 2.9.0; repo clonado en `~/morfi_center` con la estructura completa. _Depende de:_ T-0.7.1
 
-- [ ] **T-0.7.3 · [Infra] Servicio `systemd` + Nginx reverse proxy + HTTPS**
-  `deploy/morficenter-api.service` corriendo Uvicorn con reinicio automático; `deploy/nginx.morficenter.conf` como reverse proxy hacia Uvicorn; certificado HTTPS con Certbot.
-  _Prueba:_ `systemctl status morficenter-api` en verde; `https://<host-contabo>/api/v1/health` responde 200 con candado válido. _Depende de:_ T-0.7.2, T-0.2.6
+- [x] **T-0.7.3 · [Infra] Servicio `systemd` + Nginx reverse proxy + HTTPS**
+  `deploy/morficenter-api.service` corriendo Uvicorn con reinicio automático; `deploy/nginx.morficenter.conf` como reverse proxy hacia Uvicorn; certificado HTTPS con Certbot. Sin dominio propio: se usa `sslip.io` (gratis) para tener un hostname válido para Certbot. Runbook completo en `deploy/DEPLOY.md §3`, incluidos los gotchas reales de `sudo` no interactivo por SSH y de `nohup ... &` dejando la sesión colgada. **Nota de orden:** esta tarea en la práctica necesitó primero el contenido de `T-0.7.4` (venv, `.env`, migraciones) — no se puede arrancar un servicio `systemd` de algo que todavía no está instalado ni migrado. Se hicieron juntas.
+  _Prueba:_ `systemctl status morficenter-api` en verde; `https://<host-contabo>/api/v1/health` responde 200 con candado válido. **Verificado en el VPS real:** `Active: active (running)`; `curl https://<host-sslip>/api/v1/health` → 200 con certificado válido (sin `-k`); `http://` redirige a `https://`. _Depende de:_ T-0.7.2, T-0.2.6
 
-- [ ] **T-0.7.4 · [Infra] Primer deploy del backend al VPS**
-  Traer el código al servidor (git pull o rsync), `venv` + `requirements.txt`, `backend/.env` real cargado a mano en el servidor, `alembic upgrade head`, `python -m app.db.seed`.
-  _Prueba:_ el healthcheck responde en producción con datos semilla cargados. _Depende de:_ T-0.7.3
+- [x] **T-0.7.4 · [Infra] Primer deploy del backend al VPS**
+  Traer el código al servidor (git pull o rsync), `venv` + `requirements.txt`, `backend/.env` real cargado a mano en el servidor, `alembic upgrade head`, `python -m app.db.seed`. **Nota de orden:** se hizo junto con `T-0.7.3` (ver nota ahí) — depende de `T-0.7.2` en la práctica, no de `T-0.7.3`.
+  _Prueba:_ el healthcheck responde en producción con datos semilla cargados. **Verificado:** `{"status":"ok","env":"production"}` en el VPS real, con la migración `baseline` aplicada y el seed (todavía vacío, `run_seed()` sin contenido hasta Fase 1) corrido sin error. _Depende de:_ T-0.7.2
 
 - [ ] **T-0.7.5 · [Infra] Proyecto en Vercel + primer deploy del frontend**
   Conectar el repositorio a Vercel; configurar el *build command* del front (Tailwind) o commitear `tailwind.css` ya generado; `window.__MC_API__` apuntando a la URL pública del backend en el VPS.
