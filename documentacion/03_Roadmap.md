@@ -201,9 +201,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 > El VPS ya está contratado (Contabo, 4 vCPU / 8 GB RAM / 100 GB, plan anual). No se documentan credenciales reales en ningún archivo del repo: acceso SSH por clave pública/privada, y todo secreto vive en `backend/.env` únicamente dentro del servidor. Runbook completo (sin credenciales) en `deploy/DEPLOY.md`.
 
-- [ ] **T-0.7.1 · [Infra] Alta y hardening inicial del VPS Contabo**
-  Usuario no-root dedicado con sudo; acceso SSH solo por clave pública/privada (deshabilitar login por contraseña); firewall `ufw` abierto solo a 22/80/443; actualizaciones del sistema.
-  _Prueba:_ login SSH por clave funciona; login por contraseña rechazado; `ufw status` muestra solo los puertos esperados. _Depende de:_ —
+- [x] **T-0.7.1 · [Infra] Alta y hardening inicial del VPS Contabo**
+  Usuario no-root dedicado con sudo; acceso SSH solo por clave pública/privada (deshabilitar login por contraseña); firewall `ufw` abierto solo a 22/80/443; actualizaciones del sistema. Runbook completo en `deploy/DEPLOY.md §1`. Dos gotchas reales encontrados y documentados ahí: el servicio se llama `ssh` (no `sshd`) en Ubuntu, y `/etc/ssh/sshd_config.d/50-cloud-init.conf` pisa `PasswordAuthentication` de `sshd_config` si no se corrige también.
+  _Prueba:_ login SSH por clave funciona; login por contraseña rechazado; `ufw status` muestra solo los puertos esperados. **Verificado en el VPS real**: `ssh morfi@<IP>` entra sin contraseña; `ssh root@<IP>` rechaza inmediato con `Permission denied (publickey)`; `ufw status` muestra exactamente OpenSSH/80/443 (v4 y v6). _Depende de:_ —
 
 - [ ] **T-0.7.2 · [Infra] Stack del servidor**
   Instalar Python 3.11+, `venv`, Nginx y Certbot en el VPS. Clonar el repositorio en el servidor (solo lectura de despliegue, sin credenciales de escritura innecesarias).
