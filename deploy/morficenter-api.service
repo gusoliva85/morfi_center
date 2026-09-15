@@ -1,0 +1,16 @@
+[Unit]
+Description=Morfi Center API (FastAPI/Uvicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=morfi
+Group=morfi
+WorkingDirectory=/home/morfi/morfi_center/backend
+Environment="PATH=/home/morfi/morfi_center/backend/.venv/bin"
+ExecStart=/home/morfi/morfi_center/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
