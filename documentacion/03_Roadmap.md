@@ -250,7 +250,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.1 · Modelo y lógica de usuarios
 
-- [ ] **T-1.1.1 · [Lógica] Reglas de validación de usuario**
+- [x] **T-1.1.1 · [Lógica] Reglas de validación de usuario**
   `UserService` (puro): validar email (formato + unicidad delegada al repo), teléfono opcional, nombre/apellido requeridos, política de contraseña (mínimo 8, al menos una letra y un número). Funciones `normalize_email`, `validate_password`.
   _Prueba:_ tests unitarios de cada regla (válidos e inválidos). _Depende de:_ T-0.2.2
 
