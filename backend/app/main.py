@@ -1,6 +1,8 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+# Cambio trivial para probar el despliegue continuo (T-0.7.8).
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
