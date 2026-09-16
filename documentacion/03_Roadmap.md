@@ -237,6 +237,11 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Pasos reproducibles de todo lo anterior, sin ninguna credencial real (IP, usuarios y contraseñas quedan fuera del repo). Checklist de accesos necesarios para retomar el despliegue desde cero (incluye qué secretos cargar en GitHub Actions y dónde). Se fue armando incrementalmente en cada tarea (§1 a §7); esta tarea agregó el checklist de accesos consolidado al principio del archivo.
   _Prueba:_ siguiendo el runbook al pie de la letra (con datos propios) se puede reconstruir el despliegue en un VPS nuevo. Todas las secciones (1-7) fueron ejecutadas y verificadas de verdad contra el VPS real durante T-0.7.1 a T-0.7.8, no son teóricas. _Depende de:_ T-0.7.1 a T-0.7.8
 
+## Cierre de fase
+
+- [x] **T-0.99 · [Docs] `Fase 00 - Andamiaje y base visual.md`**
+  Documento final de la fase: qué se hizo y cómo quedó implementado (estructura del proyecto, esqueleto del backend, base de datos y migraciones, base visual del front con el estilo Artesanal · Cocina de Olla, tooling, documentación viva, y toda la infraestructura de despliegue — Vercel + VPS Contabo + CI/CD), fragmentos de código clave, cómo probar. **Nota:** esta tarea no existía en versiones anteriores del roadmap (todas las demás fases sí tienen su cierre) — se agrega ahora, al completar la Fase 0, para que use la plantilla de `T-0.6.2`.
+
 ---
 
 # FASE 1 · Usuarios, roles y autenticación
@@ -1173,7 +1178,7 @@ No forma parte de este roadmap detallado; se planificará al cerrar el MVP.
 
 | Fase | Estado | Doc de cierre |
 |---|---|---|
-| 0 · Andamiaje y base visual | ⬜ Pendiente | — |
+| 0 · Andamiaje y base visual | ✅ Completa | `Fase 00 - Andamiaje y base visual.md` |
 | 1 · Usuarios, roles y autenticación | ⬜ Pendiente | — |
 | 2 · Configuración y turnos | ⬜ Pendiente | — |
 | 3 · Catálogo | ⬜ Pendiente | — |
