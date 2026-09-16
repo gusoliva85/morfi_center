@@ -251,12 +251,12 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 ## Tema 1.1 · Modelo y lógica de usuarios
 
 - [x] **T-1.1.1 · [Lógica] Reglas de validación de usuario**
-  `UserService` (puro): validar email (formato + unicidad delegada al repo), teléfono opcional, nombre/apellido requeridos, política de contraseña (mínimo 8, al menos una letra y un número). Funciones `normalize_email`, `validate_password`.
+  `UserService` (puro): validar email (formato + unicidad delegada al repo), teléfono opcional, nombre/apellido requeridos, política de contraseña (mínimo 8, al menos una letra y un número). Funciones `normalize_email`, `validate_password`. **Corrección (al armar `T-1.1.2`):** se le agregó un **máximo de 72 bytes** a `validate_password` — sin él, una contraseña más larga hace que `bcrypt.hashpw` explote con `ValueError` (límite duro de bcrypt) en vez de dar un error de validación prolijo.
   _Prueba:_ tests unitarios de cada regla (válidos e inválidos). _Depende de:_ T-0.2.2
 
-- [ ] **T-1.1.2 · [Lógica] Hash y verificación de contraseñas**
-  `core/security.py`: `hash_password`, `verify_password` con `bcrypt` directo (`rounds` ≥ 12).
-  _Prueba:_ test: `verify_password(p, hash_password(p))` True; contraseña distinta False; el hash no es el texto plano. _Depende de:_ T-0.1.3
+- [x] **T-1.1.2 · [Lógica] Hash y verificación de contraseñas**
+  `core/security.py`: `hash_password`, `verify_password` con `bcrypt` directo (`rounds` ≥ 12). **Hallazgo real:** `bcrypt` 4.x (nuestro pin, `<5.0`) trunca en silencio contraseñas de más de 72 bytes en vez de lanzar error — comportamiento distinto a `bcrypt` ≥ 5.0 (que sí lanza `ValueError`). Verificado empíricamente instalando ambas versiones. Documentado en `02_Documento_Tecnico.md §2`.
+  _Prueba:_ test: `verify_password(p, hash_password(p))` True; contraseña distinta False; el hash no es el texto plano. **Además:** cost factor real = 12; misma contraseña hasheada dos veces da hashes distintos (sal); comportamiento de truncado a 72 bytes documentado con un test. _Depende de:_ T-0.1.3
 
 - [ ] **T-1.1.3 · [Lógica] Emisión y verificación de JWT**
   `core/security.py`: `create_access_token(user)` (15 min, claims `sub`,`role`,`type=access`), `create_refresh_token(user)` (7 días, `jti`,`type=refresh`), `decode_token`. Errores claros para expirado/inválido.

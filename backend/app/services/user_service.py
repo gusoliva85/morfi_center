@@ -14,8 +14,10 @@ def is_valid_email(email: str) -> bool:
 
 
 def validate_password(password: str) -> bool:
-    """Política mínima: al menos 8 caracteres, con al menos una letra y un número."""
-    if len(password) < 8:
+    """Política: 8-72 bytes (72 es el límite duro de bcrypt — sin este tope,
+    una contraseña más larga hace explotar hash_password con un ValueError
+    en vez de un error de validación), con al menos una letra y un número."""
+    if len(password) < 8 or len(password.encode("utf-8")) > 72:
         return False
     has_letter = any(c.isalpha() for c in password)
     has_digit = any(c.isdigit() for c in password)

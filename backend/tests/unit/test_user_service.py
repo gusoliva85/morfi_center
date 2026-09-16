@@ -59,9 +59,22 @@ def test_valid_passwords(password):
         "12345678",
         "abcdefgh",
         "abc123",
+        "a1" * 40,  # 80 bytes: supera el limite duro de bcrypt (72 bytes)
     ],
 )
 def test_invalid_passwords(password):
+    assert validate_password(password) is False
+
+
+def test_password_of_exactly_72_bytes_is_valid():
+    password = "a1" * 36  # exactamente 72 bytes
+    assert len(password.encode("utf-8")) == 72
+    assert validate_password(password) is True
+
+
+def test_password_of_73_bytes_is_invalid():
+    password = "a1" * 36 + "a"  # 73 bytes
+    assert len(password.encode("utf-8")) == 73
     assert validate_password(password) is False
 
 

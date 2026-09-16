@@ -69,7 +69,7 @@ Premisas fijas del proyecto:
 | Migraciones | **Alembic** | Versionado del esquema |
 | Base de datos | **SQLite** (archivo local) | Requisito. `PRAGMA foreign_keys=ON`, modo **WAL**, `busy_timeout` |
 | Validación / schemas | **Pydantic v2** | Entrada/salida de la API, settings |
-| Hash de contraseñas | **bcrypt** (librería directa, sin passlib) | `passlib` está sin mantenimiento desde 2020 y no es compatible con `bcrypt` ≥ 4.1 (bug verificado al instalar: `AttributeError`/`ValueError` al hashear). Se usa `bcrypt` directo — más simple, sin la capa de abstracción multi-esquema que no hace falta (solo se usa bcrypt) |
+| Hash de contraseñas | **bcrypt** (librería directa, sin passlib), pin `>=4.1,<5.0` | `passlib` está sin mantenimiento desde 2020 y no es compatible con `bcrypt` ≥ 4.1 (bug verificado al instalar: `AttributeError`/`ValueError` al hashear). Se usa `bcrypt` directo — más simple, sin la capa de abstracción multi-esquema que no hace falta (solo se usa bcrypt). **Límite de 72 bytes por contraseña, y el comportamiento cambia entre versiones**: `bcrypt` 4.x (nuestro pin) trunca en silencio a 72 bytes; `bcrypt` ≥ 5.0 en cambio lanza `ValueError`. Por eso `UserService.validate_password` (§ Fase 1) rechaza contraseñas de más de 72 bytes antes de que lleguen a `hash_password` — así el comportamiento es el mismo (un error de validación claro) sin importar qué versión de `bcrypt` esté instalada |
 | Tokens | **PyJWT** (o `python-jose`) | JWT access + refresh |
 | OAuth Google | **Authlib** | Cliente OAuth2 / OIDC |
 | HTTP client (servicios externos) | **httpx** | Geocodificación, etc. |
