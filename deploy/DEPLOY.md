@@ -258,3 +258,24 @@ sudo systemctl restart morficenter-api
 
 - [ ] `curl -H "Origin: <URL_DE_VERCEL>" https://<host-sslip>/api/v1/health` devuelve el header `access-control-allow-origin: <URL_DE_VERCEL>`.
 - [ ] **Pendiente hasta Fase 1** (necesita `T-1.4.2`): login real desde el front deja la cookie de refresh y `/auth/refresh` funciona cross-site.
+
+---
+
+## 6. Backups automáticos (T-0.7.7)
+
+`deploy/backup.sh` copia `backend/data/morfi.db` y `backend/storage/payment_proofs/` a `~/backups/<timestamp>/`, y retiene solo los últimos 14. Sin `sudo` (cron de usuario).
+
+```bash
+cd ~/morfi_center && git pull
+chmod +x deploy/backup.sh
+./deploy/backup.sh   # corrida manual, para probar
+
+# Cron diario a las 3am (reemplaza cualquier entrada previa del mismo script):
+(crontab -l 2>/dev/null | grep -v 'morfi_center/deploy/backup.sh'; echo '0 3 * * * /home/morfi/morfi_center/deploy/backup.sh >> /home/morfi/backups/backup.log 2>&1') | crontab -
+crontab -l   # confirmar
+```
+
+### Checklist de esta tarea (T-0.7.7)
+
+- [ ] Corrida manual de `backup.sh` crea `~/backups/<timestamp>/` con `morfi.db` y `payment_proofs/`.
+- [ ] `crontab -l` muestra la entrada diaria a las 3am.

@@ -225,9 +225,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `FRONTEND_ORIGIN` = URL real de Vercel; `allow_origins=[FRONTEND_ORIGIN]` + `allow_credentials=True`; cookie de refresh con `SameSite=None; Secure` en producción (ver `02_Documento_Tecnico.md §17`). **Parte ya hecha, adelantada para que `T-0.7.5` pudiera probarse:** `FRONTEND_ORIGIN` en el `.env` del VPS ya apunta a `https://morfi-center.vercel.app` (verificado: el header `access-control-allow-origin` responde correcto). `COOKIE_SAMESITE=none` ya estaba seteado desde `T-0.7.3`. **Queda pendiente** la única parte que de verdad depende de `T-1.4.2` (que no existe hasta Fase 1): probar que el login real deja la cookie de refresh y que `/auth/refresh` funciona cross-site. Esta tarea se cierra recién cuando eso se verifique en Fase 1.
   _Prueba:_ login desde el front en Vercel contra el backend del VPS deja la cookie de refresh y `/auth/refresh` funciona entre los dos dominios. _Depende de:_ T-0.7.5, T-1.4.2
 
-- [ ] **T-0.7.7 · [Infra] Backups automáticos**
-  Cron diario en el VPS que copia `backend/data/morfi.db` y `backend/storage/payment_proofs/` a otro destino (otro directorio del disco como mínimo; almacenamiento externo cuando se defina).
-  _Prueba:_ tras forzar la corrida del cron, aparece una copia nueva con timestamp. _Depende de:_ T-0.7.4
+- [x] **T-0.7.7 · [Infra] Backups automáticos**
+  Cron diario en el VPS que copia `backend/data/morfi.db` y `backend/storage/payment_proofs/` a otro destino (otro directorio del disco como mínimo; almacenamiento externo cuando se defina). `deploy/backup.sh` + cron de usuario (sin `sudo`), retiene los últimos 14. Runbook en `deploy/DEPLOY.md §6`.
+  _Prueba:_ tras forzar la corrida del cron, aparece una copia nueva con timestamp. **Verificado en el VPS real:** `~/backups/20260916_024343/` con `morfi.db` y `payment_proofs/` adentro; cron instalado (`0 3 * * *`) y confirmado con `crontab -l`. _Depende de:_ T-0.7.4
 
 - [ ] **T-0.7.8 · [Infra] Despliegue continuo del backend (GitHub Actions → VPS)**
   `.github/workflows/deploy-backend.yml`: en cada push a `master`, se conecta por SSH al VPS (usando `secrets.VPS_HOST`, `secrets.VPS_USER`, `secrets.VPS_SSH_KEY` cargados por el usuario en GitHub → *Settings → Secrets and variables → Actions*, nunca en el repo) y ejecuta `git pull`, instala dependencias si cambiaron, `alembic upgrade head` y reinicia `systemctl restart morficenter-api`. El front no necesita este paso: Vercel ya redeploya solo al conectarlo al repositorio (T-0.7.5).
