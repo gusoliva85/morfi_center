@@ -2,6 +2,18 @@
 
 Sin credenciales reales en este archivo — nunca. Reemplazá `<...>` por tus propios datos al ejecutar cada paso; no los pegues acá.
 
+## Checklist de accesos para reconstruir este despliegue desde cero
+
+Para rearmar todo esto en un VPS nuevo hacen falta, de antemano:
+
+- [ ] **Cuenta de Contabo** (o el proveedor de VPS que sea) con un servidor Ubuntu ya contratado — IP y contraseña inicial de `root` (sección 1.1).
+- [ ] **Cuenta de GitHub** con acceso al repo `morfi_center` — para clonar (público, sin credencial) y para cargar los secrets de Actions (sección 7.3).
+- [ ] **Cuenta de Vercel** conectada a esa cuenta de GitHub (sección 4.1).
+- [ ] Nada de dominio propio necesario — se usa `sslip.io` (sección 3, gratis, sin cuenta) salvo que se decida comprar uno a futuro.
+- [ ] Un par de claves SSH **nuevo y dedicado** para el despliegue continuo (sección 7.1) — nunca reutilizar la clave personal de quien hace el setup.
+
+Con eso, seguir las secciones 1 a 7 en orden reconstruye el despliegue completo.
+
 ---
 
 ## 1. Alta y hardening inicial del VPS Contabo (T-0.7.1)
@@ -279,3 +291,62 @@ crontab -l   # confirmar
 
 - [ ] Corrida manual de `backup.sh` crea `~/backups/<timestamp>/` con `morfi.db` y `payment_proofs/`.
 - [ ] `crontab -l` muestra la entrada diaria a las 3am.
+
+---
+
+## 7. Despliegue continuo del backend (T-0.7.8)
+
+### 7.1 Clave SSH dedicada (nunca la personal)
+
+En tu máquina (no en el servidor):
+
+```powershell
+ssh-keygen -t ed25519 -f deploy_key -C "github-actions-morficenter" -N '""'
+```
+
+Copiar la **pública** al servidor:
+
+```bash
+cat deploy_key.pub | ssh <usuario>@<IP> "cat >> ~/.ssh/authorized_keys"
+```
+
+La **privada** (`deploy_key`, sin extensión) va directo a GitHub Secrets (paso 7.3) y después se borra de la máquina local — no hace falta guardarla en ningún lado una vez cargada ahí.
+
+### 7.2 `sudo` sin contraseña, acotado a un solo comando
+
+**Nunca dar `sudo` general sin contraseña.** Solo el comando exacto que hace falta:
+
+```bash
+echo 'morfi ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart morficenter-api' | sudo tee /etc/sudoers.d/morficenter-deploy > /dev/null
+sudo chmod 440 /etc/sudoers.d/morficenter-deploy
+sudo visudo -c   # valida sintaxis de TODOS los archivos de sudoers — importante, un error acá puede romper sudo
+```
+
+Verificar que **solo ese comando** quedó sin contraseña (cualquier otro `sudo` debe seguir pidiéndola):
+
+```bash
+ssh -i deploy_key usuario@IP "sudo systemctl restart morficenter-api"   # sin pedir password
+ssh -i deploy_key usuario@IP "sudo systemctl status morficenter-api"    # sigue pidiendo password (correcto)
+```
+
+### 7.3 Secretos en GitHub
+
+Repo → **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secreto | Valor |
+|---|---|
+| `VPS_HOST` | IP o hostname del VPS |
+| `VPS_USER` | usuario no-root (`morfi`) |
+| `VPS_SSH_KEY` | contenido completo de `deploy_key` (la privada), incluyendo `-----BEGIN...-----`/`-----END...-----` |
+
+### 7.4 El workflow
+
+`.github/workflows/deploy-backend.yml` — dispara con cualquier push a `master` que toque `backend/**`: `git pull`, reinstala dependencias si `requirements.txt` cambió, `alembic upgrade head`, `sudo systemctl restart morficenter-api`.
+
+### Checklist de esta tarea (T-0.7.8)
+
+- [ ] Un push a `master` con un cambio en `backend/` dispara el workflow (ver pestaña *Actions* del repo).
+- [ ] El workflow termina en verde (`success`).
+- [ ] En el servidor, `git log -1` muestra el commit recién pusheado (se actualizó solo).
+- [ ] El `MainPID` del servicio cambió (confirma que reinició de verdad, no que siguió corriendo el proceso viejo).
+- [ ] `https://<host-sslip>/api/v1/health` sigue respondiendo 200 después del deploy.

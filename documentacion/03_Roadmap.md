@@ -229,13 +229,13 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Cron diario en el VPS que copia `backend/data/morfi.db` y `backend/storage/payment_proofs/` a otro destino (otro directorio del disco como mínimo; almacenamiento externo cuando se defina). `deploy/backup.sh` + cron de usuario (sin `sudo`), retiene los últimos 14. Runbook en `deploy/DEPLOY.md §6`.
   _Prueba:_ tras forzar la corrida del cron, aparece una copia nueva con timestamp. **Verificado en el VPS real:** `~/backups/20260916_024343/` con `morfi.db` y `payment_proofs/` adentro; cron instalado (`0 3 * * *`) y confirmado con `crontab -l`. _Depende de:_ T-0.7.4
 
-- [ ] **T-0.7.8 · [Infra] Despliegue continuo del backend (GitHub Actions → VPS)**
-  `.github/workflows/deploy-backend.yml`: en cada push a `master`, se conecta por SSH al VPS (usando `secrets.VPS_HOST`, `secrets.VPS_USER`, `secrets.VPS_SSH_KEY` cargados por el usuario en GitHub → *Settings → Secrets and variables → Actions*, nunca en el repo) y ejecuta `git pull`, instala dependencias si cambiaron, `alembic upgrade head` y reinicia `systemctl restart morficenter-api`. El front no necesita este paso: Vercel ya redeploya solo al conectarlo al repositorio (T-0.7.5).
-  _Prueba:_ un push a `master` con un cambio trivial en el backend se ve reflejado en `https://<host-contabo>/api/v1/health` sin tocar el servidor a mano. _Depende de:_ T-0.7.4
+- [x] **T-0.7.8 · [Infra] Despliegue continuo del backend (GitHub Actions → VPS)**
+  `.github/workflows/deploy-backend.yml`: en cada push a `master`, se conecta por SSH al VPS (usando `secrets.VPS_HOST`, `secrets.VPS_USER`, `secrets.VPS_SSH_KEY` cargados por el usuario en GitHub → *Settings → Secrets and variables → Actions*, nunca en el repo) y ejecuta `git pull`, instala dependencias si cambiaron, `alembic upgrade head` y reinicia `systemctl restart morficenter-api`. El front no necesita este paso: Vercel ya redeploya solo al conectarlo al repositorio (T-0.7.5). Clave SSH dedicada (no la personal); regla `sudo NOPASSWD` acotada a un único comando (`systemctl restart morficenter-api`, no `sudo` general). Runbook en `deploy/DEPLOY.md §7`.
+  _Prueba:_ un push a `master` con un cambio trivial en el backend se ve reflejado en `https://<host-contabo>/api/v1/health` sin tocar el servidor a mano. **Verificado dos veces en el VPS real** (el cambio de prueba y su revert): el Action terminó en `success`, el servidor pulleó el commit exacto solo, el `MainPID` del servicio cambió las dos veces (reinicio real, no el proceso viejo), y `/health` siguió respondiendo 200. _Depende de:_ T-0.7.4
 
-- [ ] **T-0.7.9 · [Docs] Runbook `deploy/DEPLOY.md`**
-  Pasos reproducibles de todo lo anterior, sin ninguna credencial real (IP, usuarios y contraseñas quedan fuera del repo). Checklist de accesos necesarios para retomar el despliegue desde cero (incluye qué secretos cargar en GitHub Actions y dónde).
-  _Prueba:_ siguiendo el runbook al pie de la letra (con datos propios) se puede reconstruir el despliegue en un VPS nuevo. _Depende de:_ T-0.7.1 a T-0.7.8
+- [x] **T-0.7.9 · [Docs] Runbook `deploy/DEPLOY.md`**
+  Pasos reproducibles de todo lo anterior, sin ninguna credencial real (IP, usuarios y contraseñas quedan fuera del repo). Checklist de accesos necesarios para retomar el despliegue desde cero (incluye qué secretos cargar en GitHub Actions y dónde). Se fue armando incrementalmente en cada tarea (§1 a §7); esta tarea agregó el checklist de accesos consolidado al principio del archivo.
+  _Prueba:_ siguiendo el runbook al pie de la letra (con datos propios) se puede reconstruir el despliegue en un VPS nuevo. Todas las secciones (1-7) fueron ejecutadas y verificadas de verdad contra el VPS real durante T-0.7.1 a T-0.7.8, no son teóricas. _Depende de:_ T-0.7.1 a T-0.7.8
 
 ---
 
