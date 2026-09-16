@@ -208,3 +208,53 @@ Pide un email de contacto (avisos de vencimiento) y aceptar los términos; ante 
 - [ ] `sudo systemctl status morficenter-api` en verde (`active (running)`).
 - [ ] `curl https://<host-sslip>/api/v1/health` responde 200 con certificado válido (sin `-k`).
 - [ ] `http://<host-sslip>/...` redirige solo a `https://`.
+
+---
+
+## 4. Vercel: proyecto y primer deploy del frontend (T-0.7.5)
+
+### 4.1 Conectar el repositorio
+
+1. Entrar a [vercel.com](https://vercel.com) y loguearse con **"Continue with GitHub"**.
+2. **"Add New..." → "Project"**.
+3. Seleccionar el repo `morfi_center` (puede pedir instalar la app de Vercel en GitHub con acceso a ese repo).
+
+### 4.2 Root Directory — gotcha real
+
+El repo es un **monorepo** (`backend/`, `frontend/`, `documentacion/`, `deploy/` al mismo nivel). Por defecto Vercel intenta servir desde la **raíz del repo**, no encuentra `index.html` ahí (está en `frontend/index.html`) y da **404** en `/` (aunque `/frontend/index.html` sí responda 200 — esa es la pista para detectarlo).
+
+Arreglo: **Settings → Build and Deployment → Root Directory → `frontend`** → Save → Redeploy (a veces no dispara solo, hay que forzarlo desde la pestaña *Deployments*).
+
+### 4.3 `window.__MC_API__`
+
+Ya resuelto en el código (`frontend/index.html`): detecta el host automáticamente — `localhost`/`127.0.0.1` usa el backend de desarrollo, cualquier otro host (Vercel, o el que sea) usa la URL HTTPS real del backend en el VPS. No hace falta configurar nada aparte en Vercel para esto.
+
+### Checklist de esta tarea (T-0.7.5)
+
+- [ ] La URL de Vercel sirve el home con estilo (no 404).
+- [ ] Los assets (`assets/css/base.css`, `assets/img/...`) cargan con 200.
+- [ ] Desde la consola del navegador en esa URL, `fetch(window.__MC_API__ + '/health', {credentials:'include'})` devuelve `{"status":"ok",...}` sin error de CORS.
+
+---
+
+## 5. CORS y cookies cross-site (T-0.7.6, parcial)
+
+La parte de CORS no depende de que exista login (eso sí depende de `T-1.4.2`, Fase 1) — se adelantó para que `T-0.7.5` pudiera probarse de verdad.
+
+```bash
+# en el servidor, dentro de backend/
+sed -i "s|^FRONTEND_ORIGIN=.*|FRONTEND_ORIGIN=<URL_DE_VERCEL>|" .env
+```
+
+Y reiniciar el servicio (con `sudo`, a mano):
+
+```bash
+sudo systemctl restart morficenter-api
+```
+
+`COOKIE_SAMESITE=none` ya se configuró en la sección 3.1 — no hace falta tocarlo de nuevo.
+
+### Checklist de esta parte
+
+- [ ] `curl -H "Origin: <URL_DE_VERCEL>" https://<host-sslip>/api/v1/health` devuelve el header `access-control-allow-origin: <URL_DE_VERCEL>`.
+- [ ] **Pendiente hasta Fase 1** (necesita `T-1.4.2`): login real desde el front deja la cookie de refresh y `/auth/refresh` funciona cross-site.

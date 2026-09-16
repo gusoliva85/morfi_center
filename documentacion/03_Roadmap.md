@@ -217,12 +217,12 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   Traer el código al servidor (git pull o rsync), `venv` + `requirements.txt`, `backend/.env` real cargado a mano en el servidor, `alembic upgrade head`, `python -m app.db.seed`. **Nota de orden:** se hizo junto con `T-0.7.3` (ver nota ahí) — depende de `T-0.7.2` en la práctica, no de `T-0.7.3`.
   _Prueba:_ el healthcheck responde en producción con datos semilla cargados. **Verificado:** `{"status":"ok","env":"production"}` en el VPS real, con la migración `baseline` aplicada y el seed (todavía vacío, `run_seed()` sin contenido hasta Fase 1) corrido sin error. _Depende de:_ T-0.7.2
 
-- [ ] **T-0.7.5 · [Infra] Proyecto en Vercel + primer deploy del frontend**
-  Conectar el repositorio a Vercel; configurar el *build command* del front (Tailwind) o commitear `tailwind.css` ya generado; `window.__MC_API__` apuntando a la URL pública del backend en el VPS.
-  _Prueba:_ la URL de Vercel sirve el home con estilo; las llamadas a `/health` desde la consola del navegador llegan al backend del VPS. _Depende de:_ T-0.7.4, T-0.4.4
+- [x] **T-0.7.5 · [Infra] Proyecto en Vercel + primer deploy del frontend**
+  Conectar el repositorio a Vercel; configurar el *build command* del front (Tailwind) o commitear `tailwind.css` ya generado; `window.__MC_API__` apuntando a la URL pública del backend en el VPS. **Gotcha real:** el repo es un monorepo (`backend/`, `frontend/`, `documentacion/` al mismo nivel) — Vercel por defecto sirve desde la raíz del repo, no desde `frontend/`, y da 404 en `/`. Hay que fijar **Root Directory = `frontend`** en Settings → Build and Deployment.
+  _Prueba:_ la URL de Vercel sirve el home con estilo; las llamadas a `/health` desde la consola del navegador llegan al backend del VPS. **Verificado con un navegador real (Playwright)** contra el sitio en vivo: `fetch(window.__MC_API__ + '/health', {credentials:'include'})` desde `https://morfi-center.vercel.app` devuelve `{"status":"ok","env":"production"}`, sin errores de CORS en consola (requirió adelantar el `FRONTEND_ORIGIN` de `T-0.7.6`, ver nota ahí). _Depende de:_ T-0.7.4, T-0.4.4
 
-- [ ] **T-0.7.6 · [Backend] CORS y cookies cross-site en producción**
-  `FRONTEND_ORIGIN` = URL real de Vercel; `allow_origins=[FRONTEND_ORIGIN]` + `allow_credentials=True`; cookie de refresh con `SameSite=None; Secure` en producción (ver `02_Documento_Tecnico.md §17`).
+- [~] **T-0.7.6 · [Backend] CORS y cookies cross-site en producción**
+  `FRONTEND_ORIGIN` = URL real de Vercel; `allow_origins=[FRONTEND_ORIGIN]` + `allow_credentials=True`; cookie de refresh con `SameSite=None; Secure` en producción (ver `02_Documento_Tecnico.md §17`). **Parte ya hecha, adelantada para que `T-0.7.5` pudiera probarse:** `FRONTEND_ORIGIN` en el `.env` del VPS ya apunta a `https://morfi-center.vercel.app` (verificado: el header `access-control-allow-origin` responde correcto). `COOKIE_SAMESITE=none` ya estaba seteado desde `T-0.7.3`. **Queda pendiente** la única parte que de verdad depende de `T-1.4.2` (que no existe hasta Fase 1): probar que el login real deja la cookie de refresh y que `/auth/refresh` funciona cross-site. Esta tarea se cierra recién cuando eso se verifique en Fase 1.
   _Prueba:_ login desde el front en Vercel contra el backend del VPS deja la cookie de refresh y `/auth/refresh` funciona entre los dos dominios. _Depende de:_ T-0.7.5, T-1.4.2
 
 - [ ] **T-0.7.7 · [Infra] Backups automáticos**
