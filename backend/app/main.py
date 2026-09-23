@@ -12,7 +12,6 @@ from app.core.errors import register_error_handlers
 from app.core.logging import RequestIdMiddleware, configure_logging
 from app.core.rate_limit import limiter, rate_limit_handler
 
-
 # El ida y vuelta con Google dura segundos: una vida corta reduce la ventana en
 # la que un `state` viejo podría reutilizarse.
 OAUTH_SESSION_MAX_AGE = 10 * 60

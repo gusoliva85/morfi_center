@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     jwt_secret: str = _INSECURE_DEFAULT_JWT_SECRET
     access_token_minutes: int = 15
     refresh_token_days: int = 7
+    password_reset_minutes: int = 30
 
     # Google OAuth
     google_client_id: str = ""

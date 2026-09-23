@@ -413,9 +413,15 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.9 · Recuperación de contraseña
 
-- [ ] **T-1.9.1 · [Lógica + Backend] Solicitar y resetear**
-  `POST /auth/password/forgot` (genera token temporal firmado, 30 min; en dev lo loguea en consola en vez de mail). `POST /auth/password/reset` (token + nueva contraseña). Respuesta siempre 200 (no revela si el email existe). **Aplicar acá el rate limiting de `T-1.4.5`** (`@limiter.limit(AUTH_RATE_LIMIT)` + parámetro `request: Request`): esa tarea lo cubría para `/auth/password/*` pero esos endpoints no existían todavía.
-  _Prueba:_ test: flujo completo cambia la contraseña; token vencido → 400. _Depende de:_ T-1.1.2, T-1.1.3
+- [~] **T-1.9.1 · [Lógica + Backend] Solicitar y resetear**
+  `POST /auth/password/forgot` (token firmado de 30 min, `PASSWORD_RESET_MINUTES`) y `POST /auth/password/reset` (token + nueva contraseña). Respuesta **siempre** 200 y con el mismo cuerpo en `forgot`, exista o no el email. Rate limiting de `T-1.4.5` aplicado en los dos.
+  **Decisiones:**
+  1. **El link muere si la contraseña ya cambió.** El token lleva una huella (`pwd`) del `password_hash` vigente al emitirlo; si no coincide, se rechaza. Así un link viejo (un mail reenviado, por ejemplo) no sirve para volver a cambiar la contraseña durante sus 30 minutos, y pedir un link nuevo invalida los anteriores en cuanto se usa uno.
+  2. **Un solo uso**, reutilizando la tabla `revoked_tokens` de `T-1.4.3`. Por eso `revoke_refresh` se renombró a **`revoke_token`**: ya no es solo de refresh (refresh rotado, logout y link de recuperación guardan su `jti` en la misma tabla).
+  3. **Una cuenta sin contraseña (solo Google) puede fijarse una por acá** y queda con los dos métodos de ingreso — es el camino que la nota de `T-1.8.2` daba por hecho.
+  4. Un **reseteo rechazado no quema el link** (contraseña débil → 422), así el usuario reintenta con el mismo mail.
+  _Prueba:_ test: flujo completo cambia la contraseña; token vencido → 400 (se implementó **401**, coherente con `NOT_AUTHENTICATED` de §20 y con el resto de los tokens del proyecto). **Verificado con 24 tests**: respuesta idéntica para email conocido y desconocido, no se genera link para email inexistente ni para cuenta suspendida, la contraseña nueva funciona y la vieja deja de funcionar, hash real en base, un solo uso, link viejo muerto tras el cambio, cuenta Google-only pasa a tener contraseña y ambos providers, token basura / vencido / firmado con otra clave / un access token → 401, suspendido → 401, usuario borrado → 401, contraseña débil → 422 sin quemar el link y sin tocar la vieja, y ambos endpoints con límite de intentos.
+  > **Pendiente de infraestructura (no bloquea la fase):** el stack **no tiene servicio de mail**, así que el link se escribe en el log del servidor (`journalctl -u morficenter-api`) en lugar de enviarse por email. Para producción real hace falta elegir y conectar un proveedor de envío — queda anotado como tarea de infraestructura a definir. Por eso la tarea queda en `[~]`: funciona de punta a punta, pero el usuario final todavía no recibe el mail. _Depende de:_ T-1.1.2, T-1.1.3
 
 ## Tema 1.10 · Seed y usuarios de prueba
 

@@ -43,6 +43,26 @@ class LoginIn(BaseModel):
     password: str
 
 
+class PasswordForgotIn(BaseModel):
+    email: str
+
+
+class PasswordResetIn(BaseModel):
+    token: str
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def _password_meets_the_policy(cls, v: str) -> str:
+        if not validate_password(v):
+            raise ValueError("Debe tener al menos 8 caracteres, con una letra y un número.")
+        return v
+
+
+class MessageOut(BaseModel):
+    message: str
+
+
 class TokenOut(BaseModel):
     """Respuesta de registro y login (§11 del Documento Técnico). El refresh
     no va en el cuerpo: viaja en la cookie httpOnly `mc_refresh`."""

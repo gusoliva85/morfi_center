@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from typing import Any, Protocol
 
 import bcrypt
@@ -29,7 +30,7 @@ class _UserLike(Protocol):
 
 
 def create_access_token(user: _UserLike) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": str(user.id),
         "role": user.role,
@@ -41,13 +42,37 @@ def create_access_token(user: _UserLike) -> str:
 
 
 def create_refresh_token(user: _UserLike) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": str(user.id),
         "type": "refresh",
         "jti": str(uuid.uuid4()),
         "iat": now,
         "exp": now + timedelta(days=settings.refresh_token_days),
+    }
+    return jwt.encode(payload, settings.jwt_secret, algorithm=_ALGORITHM)
+
+
+def password_fingerprint(password_hash: str | None) -> str:
+    """Huella corta del estado actual de la contraseña.
+
+    Va dentro del token de reseteo para que, apenas la contraseña cambia, todos
+    los links de recuperación emitidos antes queden inservibles: si no, alguien
+    con un link viejo (de un mail reenviado, por ejemplo) podría volver a
+    cambiarla durante los 30 minutos siguientes.
+    """
+    return sha256((password_hash or "sin-contrasena").encode("utf-8")).hexdigest()[:16]
+
+
+def create_password_reset_token(user: _UserLike, password_hash: str | None) -> str:
+    now = datetime.now(UTC)
+    payload = {
+        "sub": str(user.id),
+        "type": "password_reset",
+        "jti": str(uuid.uuid4()),
+        "pwd": password_fingerprint(password_hash),
+        "iat": now,
+        "exp": now + timedelta(minutes=settings.password_reset_minutes),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=_ALGORITHM)
 

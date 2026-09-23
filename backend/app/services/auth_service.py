@@ -12,7 +12,13 @@ from app.core.errors import (
     NotAuthenticatedError,
     TokenInvalidError,
 )
-from app.core.security import decode_token, hash_password, verify_password
+from app.core.security import (
+    create_password_reset_token,
+    decode_token,
+    hash_password,
+    password_fingerprint,
+    verify_password,
+)
 from app.core.timezone import UTC, now_utc
 from app.models import Cart, CustomerBalance, RevokedToken, User
 from app.repositories.user_repository import UserRepository
@@ -22,6 +28,7 @@ EMAIL_TAKEN = "Ya existe una cuenta registrada con ese email."
 INVALID_CREDENTIALS = "Email o contraseña incorrectos."
 ACCOUNT_NOT_ACTIVE = "Tu cuenta no está habilitada. Contactate con el local."
 SESSION_EXPIRED = "Tu sesión expiró. Volvé a iniciar sesión."
+RESET_LINK_INVALID = "El link de recuperación no es válido o ya venció. Pedí uno nuevo."
 
 # Hash descartable para gastar el mismo tiempo cuando el email no existe: sin
 # esto, un email inexistente responde muchísimo más rápido que uno real (no
@@ -135,6 +142,55 @@ class AuthService:
 
         return user
 
+    def request_password_reset(self, email: str) -> tuple[User, str] | None:
+        """Genera el token de recuperación, o `None` si no hay a quién mandarlo.
+
+        Devuelve `None` en silencio (email inexistente o cuenta deshabilitada) y
+        el endpoint responde 200 igual: si distinguiera, cualquiera podría
+        averiguar qué emails están registrados probando de a uno.
+        """
+        user = self.users.get_by_email(email)
+        if user is None or user.status != UserStatus.ACTIVE:
+            return None
+
+        return user, create_password_reset_token(user, user.password_hash)
+
+    def reset_password(self, token: str, new_password: str) -> User:
+        """Cambia la contraseña con un token de recuperación, de un solo uso."""
+        payload = decode_token(token)  # 401 si venció o está roto
+
+        if payload.get("type") != "password_reset":
+            raise TokenInvalidError(RESET_LINK_INVALID)
+
+        jti = payload.get("jti")
+        if not jti or self.session.get(RevokedToken, jti) is not None:
+            raise TokenInvalidError(RESET_LINK_INVALID)
+
+        user = self.users.get_by_id(int(payload["sub"]))
+        if user is None or user.status != UserStatus.ACTIVE:
+            raise TokenInvalidError(RESET_LINK_INVALID)
+
+        # Si la contraseña ya cambió desde que se emitió el link, el link muere:
+        # evita que un mail viejo reenviado sirva para volver a cambiarla.
+        if payload.get("pwd") != password_fingerprint(user.password_hash):
+            raise TokenInvalidError(RESET_LINK_INVALID)
+
+        user.password_hash = hash_password(new_password)
+        # Una cuenta que venía solo de Google ahora también entra con contraseña.
+        self._ensure_local_provider(user)
+
+        try:
+            self.revoke_token(payload)  # quema el link usado
+        except IntegrityError as exc:
+            self.session.rollback()
+            raise TokenInvalidError(RESET_LINK_INVALID) from exc
+
+        return user
+
+    def _ensure_local_provider(self, user: User) -> None:
+        if not any(p.provider == AuthProvider.LOCAL for p in user.auth_providers):
+            self.users.link_provider(user, AuthProvider.LOCAL)
+
     def _ensure_active(self, user: User) -> User:
         if user.status != UserStatus.ACTIVE:
             raise ForbiddenError(ACCOUNT_NOT_ACTIVE)
@@ -164,7 +220,7 @@ class AuthService:
             raise ForbiddenError(ACCOUNT_NOT_ACTIVE)
 
         try:
-            self.revoke_refresh(payload)
+            self.revoke_token(payload)
         except IntegrityError as exc:
             # Dos usos del mismo refresh a la vez (dos pestañas, doble click, o
             # un token robado usado en paralelo): los dos pasan el chequeo de
@@ -196,12 +252,13 @@ class AuthService:
             return  # ya estaba quemado
 
         try:
-            self.revoke_refresh(payload)
+            self.revoke_token(payload)
         except IntegrityError:
             self.session.rollback()  # otro logout simultáneo ya lo quemó: está bien igual
 
-    def revoke_refresh(self, payload: dict) -> None:
-        """Marca un refresh como usado/inválido (rotación y logout)."""
+    def revoke_token(self, payload: dict) -> None:
+        """Marca un token como usado/inválido: refresh rotado, logout, o link de
+        recuperación ya consumido. Todos guardan su `jti` en la misma tabla."""
         self._purge_expired_revocations()
         self.session.add(
             RevokedToken(

@@ -12,13 +12,25 @@ from app.core.oauth import google_is_configured, oauth
 from app.core.rate_limit import AUTH_RATE_LIMIT, limiter
 from app.core.security import create_access_token, create_refresh_token
 from app.models import User
-from app.schemas.auth import LoginIn, RegisterIn, TokenOut
+from app.schemas.auth import (
+    LoginIn,
+    MessageOut,
+    PasswordForgotIn,
+    PasswordResetIn,
+    RegisterIn,
+    TokenOut,
+)
 from app.schemas.user import MeOut, UserOut
 from app.services.auth_service import SESSION_EXPIRED, AuthService
 
 REFRESH_COOKIE_NAME = "mc_refresh"
 
 logger = logging.getLogger(__name__)
+
+PASSWORD_RESET_SENT = (
+    "Si ese email tiene una cuenta, te enviamos un link para cambiar la contraseña."
+)
+PASSWORD_CHANGED = "Tu contraseña se cambió. Ya podés iniciar sesión."
 
 GOOGLE_NOT_CONFIGURED = (
     "El ingreso con Google no está disponible por ahora. Entrá con tu email y contraseña."
@@ -104,6 +116,38 @@ def refresh(
     user = AuthService(session).rotate_refresh(mc_refresh)
     set_refresh_cookie(response, user)
     return session_response(user)
+
+
+@router.post("/password/forgot", response_model=MessageOut)
+@limiter.limit(AUTH_RATE_LIMIT)
+def password_forgot(request: Request, data: PasswordForgotIn, session: SessionDep) -> MessageOut:
+    """Pide un link de recuperación.
+
+    Responde **siempre** lo mismo, exista o no el email: si distinguiera, serviría
+    para averiguar qué emails están registrados.
+    """
+    result = AuthService(session).request_password_reset(data.email)
+
+    if result is not None:
+        user, token = result
+        # Todavía no hay servicio de mail en el stack: el link se loguea en el
+        # servidor. Ver la nota de T-1.9.1 en el roadmap.
+        logger.warning(
+            "Link de recuperación para %s: %s/pages/auth/recuperar.html?token=%s",
+            user.email,
+            settings.frontend_origin.rstrip("/"),
+            token,
+        )
+
+    return MessageOut(message=PASSWORD_RESET_SENT)
+
+
+@router.post("/password/reset", response_model=MessageOut)
+@limiter.limit(AUTH_RATE_LIMIT)
+def password_reset(request: Request, data: PasswordResetIn, session: SessionDep) -> MessageOut:
+    """Cambia la contraseña con el token del link. El link sirve una sola vez."""
+    AuthService(session).reset_password(data.token, data.password)
+    return MessageOut(message=PASSWORD_CHANGED)
 
 
 @router.get("/google/login")
