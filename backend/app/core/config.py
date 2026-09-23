@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     refresh_token_days: int = 7
     password_reset_minutes: int = 30
 
+    # Admin inicial de producción (solo variables de entorno del servidor,
+    # nunca en el repositorio): sin esto no hay forma de crear el primer
+    # admin, porque POST /users exige ya ser admin.
+    seed_admin_email: str = ""
+    seed_admin_password: str = ""
+
     # Google OAuth
     google_client_id: str = ""
     google_client_secret: str = ""

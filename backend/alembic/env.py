@@ -18,7 +18,12 @@ config.set_main_option("sqlalchemy.url", settings.database_url)
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # `disable_existing_loggers=False` (el default de fileConfig es True):
+    # correr una migración no debería apagar los loggers ya creados de la app.
+    # Se notó en los tests —después de correr Alembic, los logs de la app dejaban
+    # de capturarse— y valdría igual en producción si algo corre migraciones y
+    # app en el mismo proceso.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Metadata de todos los modelos (se va completando fase a fase, ver app/db/base.py)
 target_metadata = Base.metadata

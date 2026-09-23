@@ -425,9 +425,13 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.10 · Seed y usuarios de prueba
 
-- [ ] **T-1.10.1 · [Backend + Docs] Seed de usuarios base**
-  `db/seed.py` crea (idempotente) admin, cliente y delivery de prueba. Registrar credenciales en `documentacion/Usuarios.md`.
-  _Prueba:_ `python -m app.db.seed` deja los 3 usuarios; correr dos veces no duplica. _Depende de:_ T-1.3.1, T-1.7.1
+- [x] **T-1.10.1 · [Backend + Docs] Seed de usuarios base**
+  `db/seed.py` crea (idempotente) admin, cliente y delivery de prueba. Credenciales registradas en `documentacion/Usuarios.md`. El cliente se crea con `AuthService.register` (carrito + saldo + provider local) y el staff con `UserAdminService.create_staff`.
+  **Dos decisiones de seguridad:**
+  1. **Los usuarios de prueba NO se crean en producción** (`seed_test_users` corta si `APP_ENV=production` y avisa por log). Sus contraseñas están documentadas en un repositorio **público**: crearlas en el servidor real sería dejar un admin con contraseña conocida por cualquiera. El deploy automático **no** corre el seed (solo `alembic upgrade head`), así que no pueden aparecer ahí por accidente.
+  2. **`seed_admin_from_env`** crea el primer ADMIN real desde `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` (variables del `.env` del servidor, nunca en el repo). Resuelve un círculo real: `POST /users` exige ya ser admin, así que sin esto producción no tendría forma de crear su primer admin sin tocar la base a mano. Es idempotente y sí funciona en producción.
+  **Bug de infraestructura de tests encontrado acá:** un test de `caplog` fallaba solo al correr la suite completa. Causa: `alembic/env.py` llamaba `fileConfig(...)` con su default `disable_existing_loggers=True`, así que correr las migraciones (en `test_migrations.py`, alfabéticamente anterior) **apagaba los loggers ya creados** y los tests posteriores dejaban de capturar logs. Arreglado con `disable_existing_loggers=False`, que además es lo correcto de por sí: correr una migración no debería silenciar los logs de la app.
+  _Prueba:_ `python -m app.db.seed` deja los 3 usuarios; correr dos veces no duplica. **Verificado con 19 tests y corriendo el comando de verdad dos veces** (segunda corrida sin cambios), más el login real de los tres usuarios contra un servidor (`200` con `CUSTOMER`/`ADMIN`/`DELIVERY`). Los tests cubren: roles correctos, **las contraseñas documentadas realmente funcionan** (si el seed y `Usuarios.md` se desincronizan, nadie puede entrar), el cliente tiene carrito y saldo y el staff no, el repartidor tiene su perfil en moto y `NO_DISPONIBLE`, todos `ACTIVE` con provider local, en producción no se crea ninguno (y avisa), y el admin por variables de entorno se crea, es idempotente, funciona en producción y puede autenticarse. _Depende de:_ T-1.3.1, T-1.7.1
 
 ## Tema 1.11 · Frontend de autenticación
 
