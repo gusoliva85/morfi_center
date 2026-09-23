@@ -1,10 +1,11 @@
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.core.enums import UserStatus
+from app.core.enums import Role, UserStatus
 from app.core.errors import ForbiddenError, NotAuthenticatedError, TokenInvalidError
 from app.core.security import decode_token
 from app.db.session import get_session
@@ -48,3 +49,29 @@ def get_current_user(session: SessionDep, credentials: BearerDep) -> User:
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+NOT_ALLOWED = "No tenés permiso para hacer esto."
+
+
+def require_role(*roles: Role) -> Callable[[User], User]:
+    """Dependencia que exige uno de esos roles y devuelve el usuario.
+
+    Sin argumentos exige solo tener sesión (cualquier rol logueado): es lo que
+    usan las pantallas de cliente, que no se atan a `CUSTOMER` porque un admin
+    también puede querer pedir comida (ver `T-1.11.4` y RN-33).
+
+    Devuelve el usuario, no `None`, para que el endpoint no tenga que pedir
+    `get_current_user` otra vez por separado.
+    """
+
+    def dependency(user: CurrentUser) -> User:
+        if roles and user.role not in roles:
+            raise ForbiddenError(NOT_ALLOWED)
+        return user
+
+    return dependency
+
+
+AdminUser = Annotated[User, Depends(require_role(Role.ADMIN))]
+DeliveryUser = Annotated[User, Depends(require_role(Role.DELIVERY))]
+LoggedInUser = Annotated[User, Depends(require_role())]

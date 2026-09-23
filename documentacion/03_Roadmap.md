@@ -341,9 +341,13 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   **Limpieza:** `SessionDep` estaba definido también en `api/routes/auth.py` (de `T-1.3.2`); ahora vive solo en `deps.py` y `auth.py` lo importa.
   _Prueba:_ endpoint protegido de test: con token válido 200, sin token 401, token expirado 401. **Verificado con 12 tests** sobre un endpoint de prueba creado por fixture (el primero real, `/auth/me`, llega en `T-1.5.3`): token válido identifica al usuario, sin token → 401, header sin el esquema `Bearer` → 401, `Bearer ` vacío → 401, token vencido → 401, token alterado → 401, **refresh usado como access → 401**, token de un usuario borrado → 401, suspendido → 403, y funciona con los tres roles. _Depende de:_ T-1.1.3, T-1.2.4
 
-- [ ] **T-1.5.2 · [Backend] `require_role(*roles)`**
-  Dependencia que corta con 403 si `user.role` no está en `roles`.
-  _Prueba:_ endpoint `require_role(ADMIN)`: admin 200, customer 403. _Depende de:_ T-1.5.1
+- [x] **T-1.5.2 · [Backend] `require_role(*roles)`**
+  Dependencia que corta con 403 si `user.role` no está en `roles`. Devuelve el usuario (no `None`) para que el endpoint no tenga que pedir `get_current_user` por separado. Alias listos: `AdminUser`, `DeliveryUser`, `LoggedInUser`.
+  **Tres decisiones:**
+  1. **`require_role()` sin argumentos = "cualquiera con sesión"**, no `CUSTOMER`. Es lo que pide RN-33 / `T-1.11.4`: las pantallas de cliente (carrito, pedidos, perfil) no se atan al rol `CUSTOMER` porque un ADMIN también puede querer pedir comida.
+  2. **Sin jerarquía de roles**: ADMIN no entra a los endpoints de DELIVERY por ser admin. Cada permiso se declara explícito; si alguna vez hace falta, se agrega a mano. Evita accesos heredados sin querer.
+  3. **401 vs 403 bien separados**, porque el front actúa distinto: 401 ("no sé quién sos") → redirige a login; 403 ("sé quién sos y no te corresponde") → mensaje, sin cerrar la sesión. Confundirlos desloguearía a un cliente que simplemente tocó una URL de admin.
+  _Prueba:_ endpoint `require_role(ADMIN)`: admin 200, customer 403. **Verificado con 14 tests** sobre endpoints de prueba creados por fixture: admin entra, CUSTOMER y DELIVERY → 403, DELIVERY entra a lo suyo, **ADMIN no entra a lo de DELIVERY**, los tres roles entran donde se exige solo sesión, un endpoint con dos roles permitidos acepta ambos y rechaza el tercero, sin sesión siempre 401 (nunca 403) en las cuatro variantes, y un ADMIN suspendido no entra. _Depende de:_ T-1.5.1
 
 - [ ] **T-1.5.3 · [Backend] `GET /api/v1/auth/me`**
   Devuelve `{id, first_name, last_name, email, phone, role, balance}` del usuario actual.
