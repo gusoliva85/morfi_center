@@ -1,11 +1,13 @@
+import logging
 from typing import Annotated
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Cookie, Request, Response, status
 from fastapi.responses import RedirectResponse
 
 from app.api.deps import CurrentUser, SessionDep
 from app.core.config import settings
-from app.core.errors import NotAuthenticatedError, ServiceUnavailableError
+from app.core.errors import ForbiddenError, NotAuthenticatedError, ServiceUnavailableError
 from app.core.oauth import google_is_configured, oauth
 from app.core.rate_limit import AUTH_RATE_LIMIT, limiter
 from app.core.security import create_access_token, create_refresh_token
@@ -15,6 +17,8 @@ from app.schemas.user import MeOut, UserOut
 from app.services.auth_service import SESSION_EXPIRED, AuthService
 
 REFRESH_COOKIE_NAME = "mc_refresh"
+
+logger = logging.getLogger(__name__)
 
 GOOGLE_NOT_CONFIGURED = (
     "El ingreso con Google no está disponible por ahora. Entrá con tu email y contraseña."
@@ -110,6 +114,55 @@ async def google_login(request: Request) -> RedirectResponse:
         raise ServiceUnavailableError(GOOGLE_NOT_CONFIGURED)
 
     return await oauth.google.authorize_redirect(request, settings.google_redirect_uri)
+
+
+def _front_redirect(path: str = "/", **params: str) -> RedirectResponse:
+    query = f"?{urlencode(params)}" if params else ""
+    return RedirectResponse(f"{settings.frontend_origin.rstrip('/')}{path}{query}")
+
+
+@router.get("/google/callback")
+async def google_callback(request: Request, session: SessionDep) -> RedirectResponse:
+    """Vuelta desde Google. Termina siempre en el front, no en un JSON: acá está
+    el navegador de una persona, no un cliente de API.
+
+    No manda el access token en la URL (quedaría en el historial, en los logs y
+    en el `Referer`): deja la cookie de refresh y el front pide el access con
+    `/auth/refresh` al cargar, que es lo que ya hace al iniciar.
+    """
+    if not google_is_configured():
+        raise ServiceUnavailableError(GOOGLE_NOT_CONFIGURED)
+
+    try:
+        token = await oauth.google.authorize_access_token(request)
+    except Exception:
+        # `state` que no coincide, código vencido, o el usuario canceló.
+        logger.warning("Fallo el intercambio de código con Google", exc_info=True)
+        return _front_redirect(auth_error="google")
+
+    claims = token.get("userinfo") or {}
+    if not claims.get("email") or not claims.get("sub"):
+        logger.warning("Google no devolvió email o sub en el id_token")
+        return _front_redirect(auth_error="google")
+
+    if not claims.get("email_verified"):
+        # Sin email confirmado, vincular permitiría reclamar la cuenta de otro.
+        logger.warning("Google devolvió un email sin verificar")
+        return _front_redirect(auth_error="google_email_unverified")
+
+    try:
+        user = AuthService(session).login_with_google(
+            sub=str(claims["sub"]),
+            email=claims["email"],
+            first_name=claims.get("given_name", ""),
+            last_name=claims.get("family_name", ""),
+        )
+    except ForbiddenError:
+        return _front_redirect(auth_error="account_not_active")
+
+    response = _front_redirect()
+    set_refresh_cookie(response, user)
+    return response
 
 
 @router.get("/me", response_model=MeOut)

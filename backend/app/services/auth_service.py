@@ -92,6 +92,54 @@ class AuthService:
 
         return user
 
+    def login_with_google(self, *, sub: str, email: str, first_name: str, last_name: str) -> User:
+        """Resuelve el login con Google en sus tres casos posibles.
+
+        1. Ya entró antes con Google (existe el provider) → es esa cuenta.
+        2. El email ya tiene cuenta local → se le **vincula** Google, así no
+           terminan dos cuentas separadas de la misma persona.
+        3. No existe → se crea un CUSTOMER sin contraseña (`password_hash=NULL`)
+           con su carrito y su saldo, igual que un registro normal.
+
+        Quien llama debe haber verificado que el email está confirmado por
+        Google: vincular con un email sin confirmar permitiría reclamar la
+        cuenta de otra persona con solo declarar su dirección.
+        """
+        email = normalize_email(email)
+
+        linked = self.users.get_provider(AuthProvider.GOOGLE, sub)
+        if linked is not None:
+            return self._ensure_active(linked.user)
+
+        existing = self.users.get_by_email(email)
+        if existing is not None:
+            self.users.link_provider(existing, AuthProvider.GOOGLE, provider_uid=sub)
+            self.session.flush()
+            return self._ensure_active(existing)
+
+        try:
+            user = self.users.create(
+                first_name=first_name.strip() or email.split("@")[0],
+                last_name=last_name.strip() or "-",
+                email=email,
+                password_hash=None,  # solo entra con Google hasta que use "olvidé mi contraseña"
+                role=Role.CUSTOMER,
+            )
+            self.users.link_provider(user, AuthProvider.GOOGLE, provider_uid=sub)
+            user.cart = Cart()
+            user.balance = CustomerBalance()
+            self.session.flush()
+        except IntegrityError as exc:
+            self.session.rollback()
+            raise ConflictError(EMAIL_TAKEN) from exc
+
+        return user
+
+    def _ensure_active(self, user: User) -> User:
+        if user.status != UserStatus.ACTIVE:
+            raise ForbiddenError(ACCOUNT_NOT_ACTIVE)
+        return user
+
     def rotate_refresh(self, refresh_token: str) -> User:
         """Valida un refresh token y lo quema: el mismo token no sirve dos veces.
 

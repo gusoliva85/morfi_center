@@ -401,9 +401,15 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   _Prueba:_ el endpoint redirige a `accounts.google.com` con los params correctos. **Verificado con 9 tests**: destino `accounts.google.com`, `response_type=code` con nuestro `client_id` y `redirect_uri`, scopes `openid email profile`, `state` presente, `code_challenge_method=S256` con su desafío, dos logins generan `state` y desafío distintos, la cookie es `httponly` + `samesite=lax`, no requiere sesión previa, y sin credenciales → 503 (**confirmado también contra un servidor real**, con el resto de la API sana).
   > **⚠️ Pendiente del usuario (no bloquea el resto del proyecto):** crear las credenciales en Google Cloud (proyecto, pantalla de consentimiento, `Client ID` + `Client Secret` y la URI de retorno) y cargarlas en el `.env` del VPS. Son de su cuenta de Google. Decisión del 2026-09-23: **se deja para más adelante** y se sigue avanzando; hasta entonces el botón de Google responde 503 con mensaje claro y el login local funciona normal. _Depende de:_ T-0.2.1
 
-- [ ] **T-1.8.2 · [Lógica + Backend] Callback y vinculación**
+- [~] **T-1.8.2 · [Lógica + Backend] Callback y vinculación**
   `GET /auth/google/callback`: valida `id_token`, obtiene `sub`/`email`/nombre. `AuthService.login_with_google`: si existe provider→login; si existe email→vincula; si no→crea CUSTOMER (`password_hash=NULL`) + cart + balance. Emite tokens y redirige al front.
-  _Prueba:_ tests con `id_token` mockeado: los tres caminos (nuevo, vincula, login). _Depende de:_ T-1.8.1, T-1.3.1
+  **Decisiones:**
+  1. **Se rechaza un email que Google no confirmó** (`email_verified`): vincular con un email sin confirmar permitiría reclamar la cuenta de otra persona con solo declarar su dirección.
+  2. **La identidad es el `sub` de Google, no el email**: si la persona cambia su email en Google sigue siendo la misma cuenta, sin duplicarse.
+  3. **El access token no viaja en la URL** (quedaría en el historial, en los logs y en el `Referer`): el callback deja la cookie de refresh y redirige al front, que pide el access con `/auth/refresh` al cargar — lo que ya hace `bootstrapSession()` (T-0.4.6).
+  4. **Los errores vuelven al front con un aviso**, no a un JSON de error: acá hay un navegador, no un cliente de API. `?auth_error=google` (intercambio fallido, `state` inválido o cancelación), `google_email_unverified` y `account_not_active`. **Para `T-1.11.1`:** la pantalla de login tiene que leer ese parámetro y mostrar el mensaje correspondiente.
+  _Prueba:_ tests con `id_token` mockeado: los tres caminos (nuevo, vincula, login). **Verificado con 19 tests**: los tres caminos, vinculación sin duplicar cuenta ni provider, la contraseña local sigue funcionando después de vincular, reconoce la cuenta aunque cambie el email en Google, email normalizado, funciona sin `given_name`/`family_name`, el token no aparece en la URL, y ningún error (intercambio fallido, email sin verificar, claims faltantes, cuenta suspendida —también dando la vuelta por Google—) deja usuarios a medias.
+  > **Queda en `[~]` a pedido del usuario (2026-09-23):** el código está completo y cubierto por tests, pero **la validación real depende de las credenciales de Google** (ver `T-1.8.1`), que quedaron en suspenso. Se cierra cuando se carguen y se pruebe el login con una cuenta real. _Depende de:_ T-1.8.1, T-1.3.1
 
 ## Tema 1.9 · Recuperación de contraseña
 
