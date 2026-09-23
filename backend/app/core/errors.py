@@ -56,6 +56,20 @@ class InvalidTransitionError(DomainError):
     code = "INVALID_TRANSITION"
 
 
+class TokenExpiredError(DomainError):
+    """JWT válido en su momento pero ya vencido (access o refresh)."""
+
+    status_code = 401
+    code = "NOT_AUTHENTICATED"
+
+
+class TokenInvalidError(DomainError):
+    """JWT malformado, con firma inválida, o de un tipo inesperado."""
+
+    status_code = 401
+    code = "NOT_AUTHENTICATED"
+
+
 async def domain_error_handler(request: Request, exc: DomainError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,

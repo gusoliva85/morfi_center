@@ -258,8 +258,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   `core/security.py`: `hash_password`, `verify_password` con `bcrypt` directo (`rounds` ≥ 12). **Hallazgo real:** `bcrypt` 4.x (nuestro pin, `<5.0`) trunca en silencio contraseñas de más de 72 bytes en vez de lanzar error — comportamiento distinto a `bcrypt` ≥ 5.0 (que sí lanza `ValueError`). Verificado empíricamente instalando ambas versiones. Documentado en `02_Documento_Tecnico.md §2`.
   _Prueba:_ test: `verify_password(p, hash_password(p))` True; contraseña distinta False; el hash no es el texto plano. **Además:** cost factor real = 12; misma contraseña hasheada dos veces da hashes distintos (sal); comportamiento de truncado a 72 bytes documentado con un test. _Depende de:_ T-0.1.3
 
-- [ ] **T-1.1.3 · [Lógica] Emisión y verificación de JWT**
-  `core/security.py`: `create_access_token(user)` (15 min, claims `sub`,`role`,`type=access`), `create_refresh_token(user)` (7 días, `jti`,`type=refresh`), `decode_token`. Errores claros para expirado/inválido.
+- [x] **T-1.1.3 · [Lógica] Emisión y verificación de JWT**
+  `core/security.py`: `create_access_token(user)` (15 min, claims `sub`,`role`,`type=access`), `create_refresh_token(user)` (7 días, `jti`,`type=refresh`), `decode_token`. Errores claros para expirado/inválido: se agregan `TokenExpiredError`/`TokenInvalidError` a `core/errors.py` (extensión de `T-0.2.3`), ambas con `status_code=401` y `code="NOT_AUTHENTICATED"` (coincide con la tabla de §20) aunque sean clases distintas — permite que el código interno distinga la causa sin cambiar el contrato de la API. `user` se tipa como `Protocol` (`id`+`role`) para no depender todavía del modelo `User` real, que llega en `T-1.2.1`.
   _Prueba:_ tests: token válido decodifica; token expirado y firma inválida lanzan el error esperado. _Depende de:_ T-0.2.1
 
 ## Tema 1.2 · Persistencia de usuarios
