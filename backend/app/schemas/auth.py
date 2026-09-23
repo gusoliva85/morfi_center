@@ -33,6 +33,16 @@ class RegisterIn(BaseModel):
         return v
 
 
+class LoginIn(BaseModel):
+    """A propósito sin las validaciones de formato de `RegisterIn`: el login no
+    debe aplicar la política de contraseña vigente, o una cuenta creada bajo una
+    política anterior quedaría sin poder entrar nunca más. Credenciales que no
+    cumplen simplemente no coinciden con ninguna cuenta → 401."""
+
+    email: str
+    password: str
+
+
 class TokenOut(BaseModel):
     """Respuesta de registro y login (§11 del Documento Técnico). El refresh
     no va en el cuerpo: viaja en la cookie httpOnly `mc_refresh`."""

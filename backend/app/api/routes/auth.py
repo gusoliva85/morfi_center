@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token
 from app.db.session import get_session
 from app.models import User
-from app.schemas.auth import RegisterIn, TokenOut
+from app.schemas.auth import LoginIn, RegisterIn, TokenOut
 from app.schemas.user import UserOut
 from app.services.auth_service import AuthService
 
@@ -58,5 +58,12 @@ def register(data: RegisterIn, response: Response, session: SessionDep) -> Token
         password=data.password,
         phone=data.phone,
     )
+    set_refresh_cookie(response, user)
+    return session_response(user)
+
+
+@router.post("/login", response_model=TokenOut)
+def login(data: LoginIn, response: Response, session: SessionDep) -> TokenOut:
+    user = AuthService(session).authenticate(email=data.email, password=data.password)
     set_refresh_cookie(response, user)
     return session_response(user)
