@@ -1,21 +1,18 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Request, Response, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Cookie, Request, Response, status
 
+from app.api.deps import SessionDep
 from app.core.config import settings
 from app.core.errors import NotAuthenticatedError
 from app.core.rate_limit import AUTH_RATE_LIMIT, limiter
 from app.core.security import create_access_token, create_refresh_token
-from app.db.session import get_session
 from app.models import User
 from app.schemas.auth import LoginIn, RegisterIn, TokenOut
 from app.schemas.user import UserOut
 from app.services.auth_service import SESSION_EXPIRED, AuthService
 
 REFRESH_COOKIE_NAME = "mc_refresh"
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

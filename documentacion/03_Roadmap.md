@@ -333,9 +333,13 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.5 · Autorización (RBAC)
 
-- [ ] **T-1.5.1 · [Backend] `api/deps.py` — `get_current_user`**
-  Extrae el Bearer, decodifica, carga `User`, valida `ACTIVE`. Lanza 401 si falla.
-  _Prueba:_ endpoint protegido de test: con token válido 200, sin token 401, token expirado 401. _Depende de:_ T-1.1.3, T-1.2.4
+- [x] **T-1.5.1 · [Backend] `api/deps.py` — `get_current_user`**
+  Extrae el Bearer, decodifica, carga `User`, valida `ACTIVE`. Lanza 401 si falla. Expone los alias `SessionDep` y `CurrentUser` (`Annotated[...]`) para que los endpoints no repitan `Depends`. **`HTTPBearer(auto_error=False)`**: con el default, un header faltante devuelve el error propio de FastAPI (403, otro formato) en vez del `{"error": {"code": "NOT_AUTHENTICATED"}}` de §20.1.
+  **Dos decisiones:**
+  1. **Solo acepta tokens `type=access`.** Aceptar un refresh acá saltearía la rotación de un solo uso de `T-1.4.3` y dejaría esa protección sin efecto.
+  2. **El `status` se revalida en cada request**: suspender a alguien lo echa al instante en vez de dejarlo operar hasta 15 min más con su access token vigente (403 `FORBIDDEN`).
+  **Limpieza:** `SessionDep` estaba definido también en `api/routes/auth.py` (de `T-1.3.2`); ahora vive solo en `deps.py` y `auth.py` lo importa.
+  _Prueba:_ endpoint protegido de test: con token válido 200, sin token 401, token expirado 401. **Verificado con 12 tests** sobre un endpoint de prueba creado por fixture (el primero real, `/auth/me`, llega en `T-1.5.3`): token válido identifica al usuario, sin token → 401, header sin el esquema `Bearer` → 401, `Bearer ` vacío → 401, token vencido → 401, token alterado → 401, **refresh usado como access → 401**, token de un usuario borrado → 401, suspendido → 403, y funciona con los tres roles. _Depende de:_ T-1.1.3, T-1.2.4
 
 - [ ] **T-1.5.2 · [Backend] `require_role(*roles)`**
   Dependencia que corta con 403 si `user.role` no está en `roles`.
