@@ -435,9 +435,17 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.11 · Frontend de autenticación
 
-- [ ] **T-1.11.1 · [Frontend] `pages/auth/login.html` + `assets/js/pages/login.js`**
+- [~] **T-1.11.1 · [Frontend] `pages/auth/login.html` + `assets/js/pages/login.js`**
   Formulario (email, password) con estilo Artesanal · Cocina de Olla (inputs/labels/errores de la skill), botón "Iniciar sesión" y botón "Continuar con Google". Al enviar: `auth.login()` → si OK, redirige según rol (CUSTOMER→`/index.html`, ADMIN→`/pages/admin/dashboard.html`, DELIVERY→`/pages/delivery/inicio.html`). Muestra errores del backend.
-  _Prueba:_ el usuario loguea con cada usuario de prueba y cae en la pantalla correcta; credenciales malas muestran el error. _Depende de:_ T-1.4.2, T-0.4.6
+  **Decisiones:**
+  1. **Pantalla enfocada**: sin header con carrito ni nav — solo la marca, que enlaza al home. En escritorio el panel queda **centrado y acotado** (`max-w-[480px]`), porque §16.2 prohíbe la card suelta estirada a todo el ancho.
+  2. **`.blob` no va en los botones anchos.** Sus radios son porcentuales, así que en un elemento ancho y bajo se deforma en una elipse (se vio en la captura del navegador); en el mockup solo aparece en elementos compactos o cuadrados. Los botones de formulario usan `rounded-2xl` con `border-2`, y `.blob` queda para la marca y las formas decorativas.
+  3. **Destino por rol en un solo lugar** (`HOME_BY_ROLE`): CUSTOMER → `/index.html`. **ADMIN → `/pages/admin/usuarios.html`** y **DELIVERY → `/index.html`**, en vez de los `dashboard.html`/`delivery/inicio.html` del texto original: esas pantallas no existen todavía (la de admin llega en `T-1.11.6`, la del repartidor en Fase 14) y mandar ahí sería un 404. Actualizar cuando existan.
+  4. **`next` solo acepta rutas internas** (`/...` y no `//...`): un `next` con URL externa convertiría el login en un salto a cualquier sitio, que es el truco clásico para hacer phishing con un link que parece nuestro.
+  5. **El botón de Google consulta antes de navegar**: el endpoint redirige (necesita navegación real), pero sin credenciales responde 503 y navegar mostraría un JSON crudo. Se consulta primero y el aviso se muestra dentro de la pantalla.
+  6. **Aviso fijo sobre Google**: como el backend no puede decir "esta cuenta entra con Google" sin filtrar qué emails existen (`T-1.4.1`), el texto está en la pantalla.
+  **Cambios de apoyo:** `assets/js/config.js` centraliza la URL de la API (antes iba inline en cada página: cambiar el backend habría obligado a editar todas) e `index.html` pasa a usarlo; y en el backend, los errores de Google ahora redirigen a `/pages/auth/login.html?auth_error=...` en vez de al home, que es la pantalla que sabe mostrarlos.
+  _Prueba:_ el usuario loguea con cada usuario de prueba y cae en la pantalla correcta; credenciales malas muestran el error. **Verificado en un navegador real (Chromium vía Playwright)**, a 390px y a 1440px: sin errores de consola, sin scroll horizontal, los **tres usuarios de prueba loguean y caen en su pantalla** dejando la cookie de sesión, credenciales incorrectas muestran "Email o contraseña incorrectos" sin salir de la página y con el botón reactivado, `?auth_error=` pinta el aviso correcto, y el botón de Google avisa dentro de la pantalla. _Depende de:_ T-1.4.2, T-0.4.6
 
 - [ ] **T-1.11.2 · [Frontend] `pages/auth/registro.html` + js**
   Formulario (nombre, apellido, email, teléfono, contraseña + repetir) con validación en vivo. Al registrar: alta + login automático + redirección al home.

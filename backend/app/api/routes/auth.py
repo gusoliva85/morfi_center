@@ -160,9 +160,18 @@ async def google_login(request: Request) -> RedirectResponse:
     return await oauth.google.authorize_redirect(request, settings.google_redirect_uri)
 
 
+FRONT_LOGIN_PATH = "/pages/auth/login.html"
+
+
 def _front_redirect(path: str = "/", **params: str) -> RedirectResponse:
     query = f"?{urlencode(params)}" if params else ""
     return RedirectResponse(f"{settings.frontend_origin.rstrip('/')}{path}{query}")
+
+
+def _front_login_error(reason: str) -> RedirectResponse:
+    """Los errores vuelven a la pantalla de login, que es la que sabe mostrarlos
+    (`AUTH_ERRORS` en `assets/js/pages/login.js`), y no al home."""
+    return _front_redirect(FRONT_LOGIN_PATH, auth_error=reason)
 
 
 @router.get("/google/callback")
@@ -182,17 +191,17 @@ async def google_callback(request: Request, session: SessionDep) -> RedirectResp
     except Exception:
         # `state` que no coincide, código vencido, o el usuario canceló.
         logger.warning("Fallo el intercambio de código con Google", exc_info=True)
-        return _front_redirect(auth_error="google")
+        return _front_login_error("google")
 
     claims = token.get("userinfo") or {}
     if not claims.get("email") or not claims.get("sub"):
         logger.warning("Google no devolvió email o sub en el id_token")
-        return _front_redirect(auth_error="google")
+        return _front_login_error("google")
 
     if not claims.get("email_verified"):
         # Sin email confirmado, vincular permitiría reclamar la cuenta de otro.
         logger.warning("Google devolvió un email sin verificar")
-        return _front_redirect(auth_error="google_email_unverified")
+        return _front_login_error("google_email_unverified")
 
     try:
         user = AuthService(session).login_with_google(
@@ -202,7 +211,7 @@ async def google_callback(request: Request, session: SessionDep) -> RedirectResp
             last_name=claims.get("family_name", ""),
         )
     except ForbiddenError:
-        return _front_redirect(auth_error="account_not_active")
+        return _front_login_error("account_not_active")
 
     response = _front_redirect()
     set_refresh_cookie(response, user)
