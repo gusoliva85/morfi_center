@@ -1,12 +1,11 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-
 from app.core.config import settings
 from app.db.base import Base
+from app.db.types import UTCDateTime
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -23,6 +22,23 @@ if config.config_file_name is not None:
 
 # Metadata de todos los modelos (se va completando fase a fase, ver app/db/base.py)
 target_metadata = Base.metadata
+
+
+def render_item(type_, obj, autogen_context):
+    """Los tipos propios (app/db/types.py) se renderizan por su tipo SQL base.
+
+    Si no, --autogenerate escribe `app.db.types.UTCDateTime()` en el script sin
+    importar `app`, y la migración explota con NameError al correr (incluido el
+    deploy automático al VPS). Además, una migración no debería depender de
+    código de la app: ese código puede renombrarse o desaparecer, y las
+    migraciones viejas tienen que seguir corriendo igual. El DDL es idéntico:
+    UTCDateTime usa DateTime como impl y solo agrega el manejo de zona horaria
+    en Python, que no existe a nivel base de datos.
+    """
+    if type_ == "type" and isinstance(obj, UTCDateTime):
+        return "sa.DateTime()"
+    return False
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -49,6 +65,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         render_as_batch=True,  # SQLite: ALTER via "batch mode"
+        render_item=render_item,
     )
 
     with context.begin_transaction():
@@ -73,6 +90,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             render_as_batch=True,  # SQLite: ALTER via "batch mode"
+            render_item=render_item,
         )
 
         with context.begin_transaction():
