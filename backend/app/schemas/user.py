@@ -15,3 +15,10 @@ class UserOut(BaseModel):
     email: str
     phone: str | None
     role: Role
+
+
+class MeOut(UserOut):
+    """Lo que devuelve `GET /auth/me`: el usuario más su saldo a favor, en
+    centavos (§11: el dinero viaja como entero, nunca como float)."""
+
+    balance: int

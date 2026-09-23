@@ -2,14 +2,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Request, Response, status
 
-from app.api.deps import SessionDep
+from app.api.deps import CurrentUser, SessionDep
 from app.core.config import settings
 from app.core.errors import NotAuthenticatedError
 from app.core.rate_limit import AUTH_RATE_LIMIT, limiter
 from app.core.security import create_access_token, create_refresh_token
 from app.models import User
 from app.schemas.auth import LoginIn, RegisterIn, TokenOut
-from app.schemas.user import UserOut
+from app.schemas.user import MeOut, UserOut
 from app.services.auth_service import SESSION_EXPIRED, AuthService
 
 REFRESH_COOKIE_NAME = "mc_refresh"
@@ -94,6 +94,18 @@ def refresh(
     user = AuthService(session).rotate_refresh(mc_refresh)
     set_refresh_cookie(response, user)
     return session_response(user)
+
+
+@router.get("/me", response_model=MeOut)
+def me(user: CurrentUser) -> MeOut:
+    """Quién es el usuario de la sesión actual. El front lo llama al cargar cada
+    página para saludarlo y decidir qué mostrar."""
+    return MeOut(
+        **UserOut.model_validate(user).model_dump(),
+        # Sin fila de saldo (staff, o un cliente de antes de que existiera la
+        # tabla) el saldo es 0, no un error.
+        balance=user.balance.balance if user.balance else 0,
+    )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

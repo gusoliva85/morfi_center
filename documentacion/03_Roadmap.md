@@ -349,9 +349,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   3. **401 vs 403 bien separados**, porque el front actúa distinto: 401 ("no sé quién sos") → redirige a login; 403 ("sé quién sos y no te corresponde") → mensaje, sin cerrar la sesión. Confundirlos desloguearía a un cliente que simplemente tocó una URL de admin.
   _Prueba:_ endpoint `require_role(ADMIN)`: admin 200, customer 403. **Verificado con 14 tests** sobre endpoints de prueba creados por fixture: admin entra, CUSTOMER y DELIVERY → 403, DELIVERY entra a lo suyo, **ADMIN no entra a lo de DELIVERY**, los tres roles entran donde se exige solo sesión, un endpoint con dos roles permitidos acepta ambos y rechaza el tercero, sin sesión siempre 401 (nunca 403) en las cuatro variantes, y un ADMIN suspendido no entra. _Depende de:_ T-1.5.1
 
-- [ ] **T-1.5.3 · [Backend] `GET /api/v1/auth/me`**
-  Devuelve `{id, first_name, last_name, email, phone, role, balance}` del usuario actual.
-  _Prueba:_ test: con token de cada rol devuelve sus datos. _Depende de:_ T-1.5.1
+- [x] **T-1.5.3 · [Backend] `GET /api/v1/auth/me`**
+  Devuelve `{id, first_name, last_name, email, phone, role, balance}` del usuario actual. Primer endpoint protegido real del proyecto. Schema `MeOut(UserOut)` con `balance` **en centavos** (§11: el dinero viaja como entero, nunca float). **Un usuario sin fila de saldo (staff) devuelve 0, no error** — `customer_balances` es solo de clientes.
+  _Prueba:_ test: con token de cada rol devuelve sus datos. **Verificado con 10 tests y el recorrido completo contra un servidor real**: funcionan los tokens que vienen del registro, del login y de una rotación de refresh; sin token → 401; token inválido → 401; suspendido → 403. Los tests además fijan el contrato: la respuesta trae **exactamente** esos 7 campos (nada sensible) y cada usuario ve solo sus propios datos. _Depende de:_ T-1.5.1
 
 ## Tema 1.6 · Perfil
 
