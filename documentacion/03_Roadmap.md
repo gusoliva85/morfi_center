@@ -360,9 +360,14 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.6 · Perfil
 
-- [ ] **T-1.6.1 · [Lógica + Backend] Editar perfil**
-  `UserService.update_profile(user, {first_name?, last_name?, phone?})` con validación. `PATCH /api/v1/users/me/profile`.
-  _Prueba:_ test: cambia teléfono y persiste; email no editable por este endpoint. _Depende de:_ T-1.5.1
+- [x] **T-1.6.1 · [Lógica + Backend] Editar perfil**
+  `update_profile(user, changes)` con validación (función de módulo en `services/user_service.py`, no método de una clase `UserService`: ese módulo es lógica pura desde `T-1.1.1` y no hay estado que justificar una clase). `PATCH /api/v1/users/me/profile`, con router nuevo `api/routes/users.py`. Devuelve `MeOut` (lo mismo que `/auth/me`) para que el front refresque su estado sin una segunda llamada.
+  **Tres decisiones:**
+  1. **Semántica real de PATCH**: se aplica solo lo que el cliente mandó (`model_dump(exclude_unset=True)`), y se distingue **campo ausente** (no se toca) de **`phone: null`** (lo borra a propósito). Sin esa distinción, editar solo el nombre borraría el teléfono — el error clásico de este endpoint.
+  2. **`extra="forbid"` en `ProfileUpdateIn`**: mandar `email`, `role` o `password` devuelve `422` en vez de ignorarse en silencio. Ignorarlo dejaría al front mostrando "guardado" mientras el email sigue igual. Cada uno necesita su propio flujo: el email requiere verificar el nuevo, el rol lo cambia un admin (`T-1.7.2`).
+  3. La lógica queda **sin dependencia del modelo `User`** (tipada con un `Protocol`), así se testea sin base de datos y la reutiliza `T-1.7.2` cuando el admin edite a otros usuarios.
+  **Limpieza:** la construcción de la respuesta de usuario estaba duplicada entre este endpoint y `/auth/me`; ahora vive en `MeOut.from_user()`.
+  _Prueba:_ test: cambia teléfono y persiste; email no editable por este endpoint. **Verificado con 33 tests** (10 de lógica pura + 23 de API): los cambios se releen **desde la base** (no se confía en la respuesta), un cambio parcial no borra los otros campos, `phone: null` borra y `"   "` guarda `NULL` y no `""`, la respuesta es **idéntica** a la de `/auth/me`, email/rol/contraseña → 422, nombre en blanco → 422 por campo, sin sesión → 401, suspendido → 403, staff también puede editarse (con `balance: 0`), y **editar el propio perfil no toca el de otro usuario**. _Depende de:_ T-1.5.1
 
 ## Tema 1.7 · Gestión de usuarios por admin
 

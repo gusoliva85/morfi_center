@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 
-from app.api.routes import auth
+from app.api.routes import auth, users
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 from app.core.logging import RequestIdMiddleware, configure_logging
@@ -45,6 +45,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "env": settings.app_env}
 
     app.include_router(auth.router, prefix=settings.api_prefix)
+    app.include_router(users.router, prefix=settings.api_prefix)
 
     return app
 

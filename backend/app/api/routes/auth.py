@@ -100,12 +100,7 @@ def refresh(
 def me(user: CurrentUser) -> MeOut:
     """Quién es el usuario de la sesión actual. El front lo llama al cargar cada
     página para saludarlo y decidir qué mostrar."""
-    return MeOut(
-        **UserOut.model_validate(user).model_dump(),
-        # Sin fila de saldo (staff, o un cliente de antes de que existiera la
-        # tabla) el saldo es 0, no un error.
-        balance=user.balance.balance if user.balance else 0,
-    )
+    return MeOut.from_user(user)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
