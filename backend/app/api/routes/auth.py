@@ -1,10 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Response, status
+from fastapi import APIRouter, Cookie, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errors import NotAuthenticatedError
+from app.core.rate_limit import AUTH_RATE_LIMIT, limiter
 from app.core.security import create_access_token, create_refresh_token
 from app.db.session import get_session
 from app.models import User
@@ -49,7 +50,13 @@ def session_response(user: User) -> TokenOut:
 
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
-def register(data: RegisterIn, response: Response, session: SessionDep) -> TokenOut:
+@limiter.limit(AUTH_RATE_LIMIT)
+def register(
+    request: Request,  # lo exige slowapi para sacar la IP; no se usa en el cuerpo
+    data: RegisterIn,
+    response: Response,
+    session: SessionDep,
+) -> TokenOut:
     """Alta de cliente con login automático: devuelve el access token y deja la
     cookie de refresh, igual que el login."""
     user = AuthService(session).register(
@@ -64,7 +71,13 @@ def register(data: RegisterIn, response: Response, session: SessionDep) -> Token
 
 
 @router.post("/login", response_model=TokenOut)
-def login(data: LoginIn, response: Response, session: SessionDep) -> TokenOut:
+@limiter.limit(AUTH_RATE_LIMIT)
+def login(
+    request: Request,
+    data: LoginIn,
+    response: Response,
+    session: SessionDep,
+) -> TokenOut:
     user = AuthService(session).authenticate(email=data.email, password=data.password)
     set_refresh_cookie(response, user)
     return session_response(user)

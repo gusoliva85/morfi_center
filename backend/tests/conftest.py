@@ -4,9 +4,20 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.rate_limit import limiter
 from app.db.base import Base
 from app.db.session import get_session
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limit():
+    """El límite de intentos (T-1.4.5) vive en memoria del proceso y todos los
+    tests comparten la misma IP: sin resetearlo, un test que hace varios logins
+    dejaría a los siguientes con 429."""
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 @pytest.fixture()

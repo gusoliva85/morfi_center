@@ -322,9 +322,14 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   **Bug real encontrado probando contra un servidor de verdad (los tests no lo veían):** reusar la cookie ya quemada devolvía **500** en vez de 401. Causa: `rotate_refresh`/`logout` **consultaban** si el `jti` estaba revocado y **después** lo insertaban; con dos usos simultáneos del mismo refresh (dos pestañas, doble click, o un token robado usado en paralelo) los dos pasan la consulta y el segundo choca contra la PK de `revoked_tokens` → `IntegrityError` sin manejar. Justo el caso que la rotación existe para frenar terminaba en error del servidor. Arreglado en ambos métodos (401 en refresh, 204 en logout) y cubierto con dos tests que **simulan la carrera** (`monkeypatch` sobre `session.get`), porque la suite normal usa una sola conexión y ahí el problema no se manifiesta. **Es el tercer caso del mismo patrón en la fase** (registro duplicado, rotación, logout): *consultar y después escribir necesita siempre que la base tenga la última palabra*.
   _Prueba:_ test: tras logout, `refresh` con esa cookie → 401. **Verificado con 13 tests y con el ciclo completo contra un servidor real:** logout → `204` con la cookie borrada (`Max-Age=0`, mismo `Path`); cookie quemada → `401`; logout repetido → `204`; logout sin sesión → `204`; volver a loguear → `200`. Los tests cubren también que el logout no borre la cuenta y que cerrar sesión en un dispositivo no cierre la del otro. _Depende de:_ T-1.4.3
 
-- [ ] **T-1.4.5 · [Backend] Rate limiting en auth**
-  `slowapi` en `/auth/login`, `/auth/register`, `/auth/password/*` (p. ej. 10/min por IP).
-  _Prueba:_ test: la petición 11 en un minuto → 429 `TOO_MANY_REQUESTS`. _Depende de:_ T-1.4.2
+- [x] **T-1.4.5 · [Backend] Rate limiting en auth**
+  `slowapi` en `/auth/login`, `/auth/register`, `/auth/password/*` (p. ej. 10/min por IP). `app/core/rate_limit.py` con `AUTH_RATE_LIMIT = "10/minute"`, el `limiter` y un handler propio de `RateLimitExceeded` (slowapi trae su formato, distinto al `{"error": {...}}` de §20.1) que además manda `Retry-After`. **`/auth/password/*` todavía no existe — se aplica en `T-1.9.1`, que ya tiene la nota.**
+  **Tres decisiones:**
+  1. **La IP tiene que ser la del cliente, no la de Nginx.** En producción la API está detrás de un reverse proxy, así que sin proxy headers *todas* las requests comparten un solo bucket y un único atacante agotaría el límite de todos los usuarios a la vez. Nginx ya manda `X-Forwarded-For` (`T-0.7.3`) y Uvicorn lo usa por su default (`proxy_headers=True`, confiando en 127.0.0.1). **Verificado con la configuración exacta de producción** (sin `--forwarded-allow-ips` explícito, como corre el `systemd`): 12 intentos desde una IP → `401` ×10 y después `429`; otra IP sigue respondiendo `401` normal.
+  2. **El límite corta incluso con la contraseña correcta** — si no, quien la adivina en el intento 15 entraría igual y el límite no serviría de nada.
+  3. **`/auth/refresh` queda sin límite** a propósito: el front lo llama de forma legítima cada vez que vence el access (cada 15 min), y limitarlo desconectaría a usuarios normales.
+  **En tests:** el límite vive en memoria del proceso y todos los tests comparten la misma IP, así que un test con varios logins dejaba a los siguientes en 429 — se agregó una fixture `autouse` en `conftest.py` que resetea el limiter antes y después de cada test.
+  _Prueba:_ test: la petición 11 en un minuto → 429 `TOO_MANY_REQUESTS`. **Verificado con 10 tests**: login y registro tienen buckets separados (agotar uno no bloquea el otro), un registro bloqueado no crea el usuario, el 429 sale en formato del proyecto con `Retry-After: 60`, y `/refresh` sigue respondiendo 200 después de 15 llamadas seguidas. _Depende de:_ T-1.4.2
 
 ## Tema 1.5 · Autorización (RBAC)
 
@@ -369,7 +374,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 ## Tema 1.9 · Recuperación de contraseña
 
 - [ ] **T-1.9.1 · [Lógica + Backend] Solicitar y resetear**
-  `POST /auth/password/forgot` (genera token temporal firmado, 30 min; en dev lo loguea en consola en vez de mail). `POST /auth/password/reset` (token + nueva contraseña). Respuesta siempre 200 (no revela si el email existe).
+  `POST /auth/password/forgot` (genera token temporal firmado, 30 min; en dev lo loguea en consola en vez de mail). `POST /auth/password/reset` (token + nueva contraseña). Respuesta siempre 200 (no revela si el email existe). **Aplicar acá el rate limiting de `T-1.4.5`** (`@limiter.limit(AUTH_RATE_LIMIT)` + parámetro `request: Request`): esa tarea lo cubría para `/auth/password/*` pero esos endpoints no existían todavía.
   _Prueba:_ test: flujo completo cambia la contraseña; token vencido → 400. _Depende de:_ T-1.1.2, T-1.1.3
 
 ## Tema 1.10 · Seed y usuarios de prueba
