@@ -280,9 +280,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   2. El primer test de migraciones corría **contra la base de desarrollo real**, no contra una temporal: `env.py` pisa la URL del `Config` con la de `Settings` (T-0.3.3), así que `config.set_main_option(...)` desde el test no tiene efecto (el `downgrade` del test llegó a revertir `data/morfi.db`, vacía, sin pérdida). Se corrige parcheando `settings.database_url`, y se verificó que la base real queda intacta tras correr la suite.
   _Prueba:_ `alembic upgrade head` y `downgrade -1` limpios; las tablas existen en `morfi.db`. **Verificado:** ciclo `upgrade` → `downgrade -1` → `upgrade` sin errores, y 4 tests nuevos, incluido uno que compara el esquema migrado contra `Base.metadata` con `compare_metadata` y **falla si alguien toca un modelo y se olvida de generar la migración**. _Depende de:_ T-1.2.2
 
-- [ ] **T-1.2.4 · [Backend] `UserRepository`**
-  `get_by_email`, `get_by_id`, `create`, `list(role=None, page, page_size)`, `get_provider(provider, uid)`, `link_provider`.
-  _Prueba:_ tests de cada método contra la DB de test. _Depende de:_ T-1.2.3
+- [x] **T-1.2.4 · [Backend] `UserRepository`**
+  `get_by_email`, `get_by_id`, `create`, `list(role=None, page, page_size)`, `get_provider(provider, uid)`, `link_provider`. **Decisiones al implementarlo:** `list` devuelve `(items, total)` y no solo los ítems — el total sin paginar lo necesita el formato de respuesta paginada de §21 (`{items, page, page_size, total}`); `create` y `get_by_email` **normalizan el email** (además del servicio), porque es un invariante de persistencia: si se guardara sin normalizar, `Ana@Example.com` y `ana@example.com` convivirían como dos cuentas distintas de la misma persona; `create` hace `flush` (asigna el `id`) pero no `commit` — la transacción la cierra `get_session` (T-0.3.1).
+  _Prueba:_ tests de cada método contra la DB de test. **Verificado con 16 tests**, entre ellos: búsqueda por email insensible a mayúsculas y espacios, el `total` del paginado es el global y no el de la página, pedir una página más allá de la última devuelve vacío en vez de error, el filtro por rol cuenta solo ese rol, y `get_provider` no confunde dos proveedores distintos que compartan el mismo `uid`. _Depende de:_ T-1.2.3
 
 ## Tema 1.3 · Registro (cuenta propia)
 
