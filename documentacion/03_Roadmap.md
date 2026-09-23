@@ -298,9 +298,14 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.4 · Login local + sesión
 
-- [ ] **T-1.4.1 · [Lógica] `AuthService.authenticate`**
-  Email + password → busca usuario → `verify_password` → valida `status=ACTIVE` → devuelve usuario o lanza `ForbiddenError`/`NotAuthenticated` (mensaje genérico "credenciales inválidas" para no filtrar existencia).
-  _Prueba:_ tests: credenciales OK; password mala; usuario suspendido. _Depende de:_ T-1.2.4, T-1.1.2
+- [x] **T-1.4.1 · [Lógica] `AuthService.authenticate`**
+  Email + password → busca usuario → `verify_password` → valida `status=ACTIVE` → devuelve usuario o lanza `ForbiddenError`/`NotAuthenticated` (mensaje genérico "credenciales inválidas" para no filtrar existencia). Se agrega `NotAuthenticatedError` (401, `NOT_AUTHENTICATED`) a `core/errors.py` — extensión de `T-0.2.3`, como las de `T-1.1.3`.
+  **Tres decisiones de seguridad tomadas al implementarlo:**
+  1. **Mismo mensaje** para email inexistente, contraseña incorrecta y cuenta sin contraseña (solo Google) — distinguirlos permitiría enumerar qué emails están registrados. Una cuenta Google-only tampoco explota al pasarle una contraseña (`verify_password(p, None)` habría tirado excepción).
+  2. **Mismo tiempo de respuesta**: si el email no existe no se corre bcrypt y la respuesta vuelve instantánea, y ese desfase delata la existencia igual que un mensaje distinto. Se verifica contra un `_DUMMY_HASH` de módulo cuando no hay usuario o no tiene contraseña. **Medido:** 185 ms con email existente y contraseña mala vs 185 ms con email inexistente — 0 ms de diferencia.
+  3. El chequeo de `status` va **después** de verificar la contraseña: así el aviso "tu cuenta no está habilitada" (`ForbiddenError`, necesario para que un suspendido no crea que olvidó la contraseña) solo lo ve quien demostró ser el dueño de la cuenta, y no sirve para enumerar emails.
+  > **Para `T-1.11.1` (pantalla de login):** como el backend no puede decir "esta cuenta entra con Google" sin filtrar existencia, la pantalla necesita un texto fijo tipo "¿te registraste con Google? Usá el botón de Google" — si no, ese usuario queda sin forma de darse cuenta.
+  _Prueba:_ tests: credenciales OK; password mala; usuario suspendido. **Verificado con 11 tests**, incluidos: los mensajes de email inexistente y contraseña incorrecta son *exactamente el mismo texto*, un suspendido con contraseña mala recibe el genérico (no el de suspensión), cuenta Google-only rechazada sin explotar, email en cualquier combinación de mayúsculas, contraseña vacía, y login de staff (ADMIN). _Depende de:_ T-1.2.4, T-1.1.2
 
 - [ ] **T-1.4.2 · [Backend] `POST /api/v1/auth/login`**
   Devuelve `{access_token, token_type, expires_in, user}` y `Set-Cookie: mc_refresh` (httpOnly, SameSite=Lax, Path acotado, Secure en prod).

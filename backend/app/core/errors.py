@@ -57,6 +57,13 @@ class InvalidTransitionError(DomainError):
     code = "INVALID_TRANSITION"
 
 
+class NotAuthenticatedError(DomainError):
+    """Credenciales inválidas o sesión ausente."""
+
+    status_code = 401
+    code = "NOT_AUTHENTICATED"
+
+
 class TokenExpiredError(DomainError):
     """JWT válido en su momento pero ya vencido (access o refresh)."""
 
