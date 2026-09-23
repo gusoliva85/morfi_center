@@ -286,9 +286,10 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.3 · Registro (cuenta propia)
 
-- [ ] **T-1.3.1 · [Lógica] `AuthService.register`**
-  Recibe datos validados → normaliza email → verifica que no exista → hashea contraseña → crea `User(role=CUSTOMER)` + `UserAuthProvider(local)` + `Cart` + `CustomerBalance`. Devuelve el usuario. Lanza `ConflictError` si el email existe.
-  _Prueba:_ test unitario con repo real: alta OK; alta duplicada → `ConflictError`. _Depende de:_ T-1.2.4, T-1.1.2
+- [x] **T-1.3.1 · [Lógica] `AuthService.register`**
+  Recibe datos validados → normaliza email → verifica que no exista → hashea contraseña → crea `User(role=CUSTOMER)` + `UserAuthProvider(local)` + `Cart` + `CustomerBalance`. Devuelve el usuario. Lanza `ConflictError` si el email existe. `AuthService` recibe la `Session` y arma su propio `UserRepository`. **Las reglas de formato (política de contraseña, formato de email) no se revalidan acá**: el roadmap las asigna al schema del endpoint (`T-1.3.2`), que las convierte en el `422 VALIDATION_ERROR` por campo de §20 — el servicio resuelve unicidad y composición, no formato.
+  **Bug propio encontrado por un test:** el manejo del alta duplicada simultánea (dos requests que pasan los dos el chequeo previo y una choca contra el `UNIQUE`) estaba envuelto solo alrededor del `flush` final, pero el `UNIQUE` salta **antes**, en el `flush` de `UserRepository.create` — así que el `IntegrityError` se escapaba y habría sido un 500 en vez de un 409. El `try` ahora cubre todo el bloque de creación.
+  _Prueba:_ test unitario con repo real: alta OK; alta duplicada → `ConflictError`. **Verificado con 13 tests**, incluidos: contraseña verificable pero nunca en texto plano, carrito y saldo en 0 creados, teléfono vacío guardado como `NULL` y no como string vacío, duplicado detectado ignorando mayúsculas y espacios, un alta fallida no deja usuario a medias, y el caso simultáneo de arriba (simulado con `monkeypatch` sobre `get_by_email`). _Depende de:_ T-1.2.4, T-1.1.2
 
 - [ ] **T-1.3.2 · [Backend] `POST /api/v1/auth/register`**
   Schema `RegisterIn` (first_name, last_name, email, phone?, password). Llama a `AuthService.register`. Devuelve 201 con el usuario (sin datos sensibles) y ya emite tokens (login automático).
