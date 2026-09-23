@@ -31,6 +31,12 @@ class User(TimestampMixin, Base):
     profile: Mapped["UserProfile | None"] = relationship(
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True, uselist=False
     )
+    cart: Mapped["Cart | None"] = relationship(  # noqa: F821 — definido en app.models.cart
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True, uselist=False
+    )
+    balance: Mapped["CustomerBalance | None"] = relationship(  # noqa: F821 — app.models.balance
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True, uselist=False
+    )
 
 
 class UserAuthProvider(Base):

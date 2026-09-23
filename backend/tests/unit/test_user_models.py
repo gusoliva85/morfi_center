@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
@@ -50,18 +52,20 @@ def test_timestamps_are_set_automatically_in_utc(session):
 
 
 def test_updated_at_changes_on_update_but_created_at_does_not(session):
-    user = make_user()
+    # Timestamps viejos explícitos: comparar contra dos now_utc() seguidos es
+    # frágil en Windows, donde el reloj puede devolver el mismo instante.
+    old = datetime(2020, 1, 1, tzinfo=UTC)
+    user = make_user(created_at=old, updated_at=old)
     session.add(user)
     session.commit()
-    created_at, first_updated_at = user.created_at, user.updated_at
 
     user.phone = "1100000000"
     session.commit()
     session.expire_all()
 
     reloaded = session.get(User, user.id)
-    assert reloaded.created_at == created_at
-    assert reloaded.updated_at > first_updated_at
+    assert reloaded.created_at == old
+    assert reloaded.updated_at > old
 
 
 def test_role_is_stored_as_enum_value_text(session):
@@ -166,16 +170,12 @@ def test_deleting_user_cascades_to_providers_and_profile(session):
 
 
 def test_utc_datetime_rejects_naive_datetimes(session):
-    from datetime import datetime
-
     session.add(make_user(created_at=datetime(2026, 9, 10, 12, 0)))
     with pytest.raises(Exception, match="tz-aware"):
         session.commit()
 
 
 def test_utc_datetime_normalizes_other_timezones_to_utc(session):
-    from datetime import datetime, timedelta, timezone
-
     ba = timezone(timedelta(hours=-3))
     session.add(make_user(created_at=datetime(2026, 9, 10, 12, 0, tzinfo=ba)))
     session.commit()
