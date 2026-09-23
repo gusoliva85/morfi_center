@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 import pytest
@@ -43,7 +43,7 @@ def test_two_refresh_tokens_have_different_jti():
 
 
 def test_expired_token_raises_token_expired_error():
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": "1",
         "type": "access",
