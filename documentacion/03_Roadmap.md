@@ -264,9 +264,9 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.2 · Persistencia de usuarios
 
-- [ ] **T-1.2.1 · [Backend] Modelos `User`, `UserAuthProvider`, `UserProfile`**
-  SQLAlchemy según `02_Documento_Tecnico.md §6.1`. Timestamps UTC automáticos.
-  _Prueba:_ crear un `User` en una sesión de test y releerlo. _Depende de:_ T-0.3.2, T-1.1.1
+- [x] **T-1.2.1 · [Backend] Modelos `User`, `UserAuthProvider`, `UserProfile`**
+  SQLAlchemy según `02_Documento_Tecnico.md §6.1`. Timestamps UTC automáticos. **Agregado al armar la tarea:** `app/db/types.py`, con las piezas reutilizables por todos los modelos que vienen — `UTCDateTime` (guarda y devuelve siempre UTC, y **rechaza** datetimes naive en vez de persistir una hora ambigua), `enum_column()` (enum de Python → `TEXT` + `CHECK`, persistiendo el *valor* y no el nombre del miembro, como exige §6) y `TimestampMixin` (`created_at`/`updated_at` automáticos). Además, `app/db/base.py` ahora importa `app.models` al final del módulo para que `Base.metadata` conozca las tablas (lo necesita el `--autogenerate` de `T-1.2.3`).
+  _Prueba:_ crear un `User` en una sesión de test y releerlo. **Verificado con 15 tests:** defaults (`CUSTOMER`/`ACTIVE`), `updated_at` se mueve en cada update y `created_at` no, email duplicado y rol inválido rechazados por la base, misma cuenta de Google en dos usuarios rechazada, varios proveedores `local` con `provider_uid` NULL sí permitidos, borrado de usuario en cascada a proveedores y perfil, `vehicle_type` inválido rechazado, y conversión horaria real (12:00 -03:00 se relee como 15:00 UTC). _Depende de:_ T-0.3.2, T-1.1.1
 
 - [ ] **T-1.2.2 · [Backend] Modelos `Cart` y `CustomerBalance` (vacíos, para el alta)**
   Se crean junto al usuario CUSTOMER (aunque su lógica llegue en Fases 6 y 12). Solo tabla + relación.

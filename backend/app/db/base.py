@@ -17,6 +17,6 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
-# A medida que se creen los modelos (fase a fase, a partir de Fase 1) se
-# importan acá para que Base.metadata los conozca y Alembic los detecte
-# con --autogenerate. Todavía no hay ninguno.
+# Importar app.models registra todos los modelos en Base.metadata para que
+# Alembic los detecte con --autogenerate. Va al final: los modelos importan Base.
+import app.models  # noqa: E402, F401
