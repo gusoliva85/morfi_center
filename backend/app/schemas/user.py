@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from app.core.enums import Role, VehicleType
+from app.core.enums import Role, UserStatus, VehicleType
 from app.services.user_service import (
     is_valid_email,
     is_valid_name,
@@ -22,6 +22,25 @@ class UserOut(BaseModel):
     email: str
     phone: str | None
     role: Role
+
+
+class UserUpdateIn(BaseModel):
+    """Lo que un admin puede cambiar de otro usuario: rol y estado. Nada más —
+    el resto de los datos los edita cada uno en su perfil (`T-1.6.1`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    role: Role | None = None
+    status: UserStatus | None = None
+
+
+class UserListOut(BaseModel):
+    """Respuesta paginada estándar del proyecto (§11)."""
+
+    items: list[UserOut]
+    page: int
+    page_size: int
+    total: int
 
 
 class StaffCreateIn(BaseModel):
