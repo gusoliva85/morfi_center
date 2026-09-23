@@ -57,6 +57,13 @@ class InvalidTransitionError(DomainError):
     code = "INVALID_TRANSITION"
 
 
+class ServiceUnavailableError(DomainError):
+    """Una integración externa no está disponible o no está configurada."""
+
+    status_code = 503
+    code = "SERVICE_UNAVAILABLE"
+
+
 class NotAuthenticatedError(DomainError):
     """Credenciales inválidas o sesión ausente."""
 

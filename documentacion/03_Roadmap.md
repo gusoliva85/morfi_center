@@ -392,9 +392,14 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.8 · Login con Google
 
-- [ ] **T-1.8.1 · [Backend] Cliente OAuth con Authlib**
-  Registrar el proveedor Google (OIDC) con `GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI`. `GET /api/v1/auth/google/login` → redirección con `state` + PKCE.
-  _Prueba:_ el endpoint redirige a `accounts.google.com` con los params correctos. _Depende de:_ T-0.2.1
+- [x] **T-1.8.1 · [Backend] Cliente OAuth con Authlib**
+  Registrar el proveedor Google (OIDC) con `GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI`. `GET /api/v1/auth/google/login` → redirección con `state` + PKCE. `app/core/oauth.py` registra el cliente y expone `google_is_configured()`.
+  **Decisiones:**
+  1. **Endpoints de Google explícitos** en vez de su documento de descubrimiento (`server_metadata_url`): ni el arranque ni el primer login dependen de una llamada extra a Google, y **los tests corren sin red ni credenciales reales**.
+  2. **Sesión firmada propia para el `state` y el PKCE** (`SessionMiddleware`, cookie `mc_oauth`, 10 min, `same_site="lax"` fijo — **no** `COOKIE_SAMESITE`): la vuelta desde Google es una navegación de primer nivel hacia la propia API, donde `lax` alcanza. Agrega la dependencia `itsdangerous` (la exige `SessionMiddleware`).
+  3. **Sin credenciales responde `503 SERVICE_UNAVAILABLE`** con un mensaje que manda al login normal, en vez de fallar con un error interno — es exactamente el estado actual de producción. Se agrega `ServiceUnavailableError` a `core/errors.py` (extensión de `T-0.2.3`; §20 no tenía 503).
+  _Prueba:_ el endpoint redirige a `accounts.google.com` con los params correctos. **Verificado con 9 tests**: destino `accounts.google.com`, `response_type=code` con nuestro `client_id` y `redirect_uri`, scopes `openid email profile`, `state` presente, `code_challenge_method=S256` con su desafío, dos logins generan `state` y desafío distintos, la cookie es `httponly` + `samesite=lax`, no requiere sesión previa, y sin credenciales → 503 (**confirmado también contra un servidor real**, con el resto de la API sana).
+  > **⚠️ Pendiente del usuario (no bloquea el resto del proyecto):** crear las credenciales en Google Cloud (proyecto, pantalla de consentimiento, `Client ID` + `Client Secret` y la URI de retorno) y cargarlas en el `.env` del VPS. Son de su cuenta de Google. Decisión del 2026-09-23: **se deja para más adelante** y se sigue avanzando; hasta entonces el botón de Google responde 503 con mensaje claro y el login local funciona normal. _Depende de:_ T-0.2.1
 
 - [ ] **T-1.8.2 · [Lógica + Backend] Callback y vinculación**
   `GET /auth/google/callback`: valida `id_token`, obtiene `sub`/`email`/nombre. `AuthService.login_with_google`: si existe provider→login; si existe email→vincula; si no→crea CUSTOMER (`password_hash=NULL`) + cart + balance. Emite tokens y redirige al front.

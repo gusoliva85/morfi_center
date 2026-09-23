@@ -1,10 +1,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Request, Response, status
+from fastapi.responses import RedirectResponse
 
 from app.api.deps import CurrentUser, SessionDep
 from app.core.config import settings
-from app.core.errors import NotAuthenticatedError
+from app.core.errors import NotAuthenticatedError, ServiceUnavailableError
+from app.core.oauth import google_is_configured, oauth
 from app.core.rate_limit import AUTH_RATE_LIMIT, limiter
 from app.core.security import create_access_token, create_refresh_token
 from app.models import User
@@ -13,6 +15,10 @@ from app.schemas.user import MeOut, UserOut
 from app.services.auth_service import SESSION_EXPIRED, AuthService
 
 REFRESH_COOKIE_NAME = "mc_refresh"
+
+GOOGLE_NOT_CONFIGURED = (
+    "El ingreso con Google no está disponible por ahora. Entrá con tu email y contraseña."
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -94,6 +100,16 @@ def refresh(
     user = AuthService(session).rotate_refresh(mc_refresh)
     set_refresh_cookie(response, user)
     return session_response(user)
+
+
+@router.get("/google/login")
+async def google_login(request: Request) -> RedirectResponse:
+    """Manda al usuario a la pantalla de Google. Authlib agrega el `state` y el
+    PKCE, y los guarda en la sesión firmada para verificarlos en la vuelta."""
+    if not google_is_configured():
+        raise ServiceUnavailableError(GOOGLE_NOT_CONFIGURED)
+
+    return await oauth.google.authorize_redirect(request, settings.google_redirect_uri)
 
 
 @router.get("/me", response_model=MeOut)
