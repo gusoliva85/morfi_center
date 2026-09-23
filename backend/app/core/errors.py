@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 
@@ -77,5 +78,29 @@ async def domain_error_handler(request: Request, exc: DomainError) -> JSONRespon
     )
 
 
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Traduce los 422 de Pydantic al formato de error del proyecto (§20.1).
+    Sin esto, FastAPI responde su `{"detail": [...]}` por defecto y el front
+    tendría que entender dos formatos de error distintos."""
+    fields = [
+        {
+            "field": ".".join(str(part) for part in error["loc"] if part != "body"),
+            "message": error["msg"].removeprefix("Value error, "),
+        }
+        for error in exc.errors()
+    ]
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Los datos enviados no son válidos.",
+                "details": {"fields": fields},
+            }
+        },
+    )
+
+
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(DomainError, domain_error_handler)
+    app.add_exception_handler(RequestValidationError, validation_error_handler)

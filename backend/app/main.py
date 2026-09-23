@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes import auth
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 from app.core.logging import RequestIdMiddleware, configure_logging
@@ -38,6 +39,8 @@ def create_app() -> FastAPI:
     @app.get(f"{settings.api_prefix}/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "env": settings.app_env}
+
+    app.include_router(auth.router, prefix=settings.api_prefix)
 
     return app
 
