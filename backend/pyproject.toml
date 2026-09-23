@@ -5,6 +5,9 @@ target-version = ["py311"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Los scripts de migración los genera Alembic con su propia plantilla (usa
+# typing.Union, líneas largas); no tiene sentido lintearlos como código propio.
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

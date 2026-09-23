@@ -16,6 +16,7 @@ EXPECTED_TABLES = {
     "user_profiles",
     "carts",
     "customer_balances",
+    "revoked_tokens",
 }
 
 
@@ -61,10 +62,12 @@ def test_migrated_schema_matches_the_models(migrated_db):
 
 
 def test_downgrade_removes_every_phase1_table(migrated_db):
+    """Baja hasta `base` y no `-1`: con más de una migración encima, `-1` solo
+    revierte la última y el test dejaría de probar lo que dice probar."""
     _, db_path = migrated_db
     assert EXPECTED_TABLES <= table_names(db_path)  # precondición: estaban antes
 
-    command.downgrade(Config("alembic.ini"), "-1")
+    command.downgrade(Config("alembic.ini"), "base")
 
     assert table_names(db_path) & EXPECTED_TABLES == set()
 

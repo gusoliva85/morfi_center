@@ -1,15 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Cookie, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.errors import NotAuthenticatedError
 from app.core.security import create_access_token, create_refresh_token
 from app.db.session import get_session
 from app.models import User
 from app.schemas.auth import LoginIn, RegisterIn, TokenOut
 from app.schemas.user import UserOut
-from app.services.auth_service import AuthService
+from app.services.auth_service import SESSION_EXPIRED, AuthService
 
 REFRESH_COOKIE_NAME = "mc_refresh"
 
@@ -65,5 +66,21 @@ def register(data: RegisterIn, response: Response, session: SessionDep) -> Token
 @router.post("/login", response_model=TokenOut)
 def login(data: LoginIn, response: Response, session: SessionDep) -> TokenOut:
     user = AuthService(session).authenticate(email=data.email, password=data.password)
+    set_refresh_cookie(response, user)
+    return session_response(user)
+
+
+@router.post("/refresh", response_model=TokenOut)
+def refresh(
+    response: Response,
+    session: SessionDep,
+    mc_refresh: Annotated[str | None, Cookie()] = None,
+) -> TokenOut:
+    """Renueva la sesión a partir de la cookie. El refresh viejo queda quemado:
+    cada llamada entrega uno nuevo (rotación de un solo uso)."""
+    if not mc_refresh:
+        raise NotAuthenticatedError(SESSION_EXPIRED)
+
+    user = AuthService(session).rotate_refresh(mc_refresh)
     set_refresh_cookie(response, user)
     return session_response(user)
