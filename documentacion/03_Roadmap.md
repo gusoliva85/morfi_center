@@ -371,9 +371,15 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 1.7 · Gestión de usuarios por admin
 
-- [ ] **T-1.7.1 · [Lógica + Backend] Crear ADMIN / DELIVERY**
-  `UserService.create_staff(role, datos)` (sin auto-login, con contraseña temporal o definida). `POST /api/v1/users` (`require_role(ADMIN)`). Para DELIVERY crea también `UserProfile` con `vehicle_type`, `capacity`.
-  _Prueba:_ test: admin crea un delivery; customer intentándolo → 403. _Depende de:_ T-1.5.2
+- [x] **T-1.7.1 · [Lógica + Backend] Crear ADMIN / DELIVERY**
+  `UserAdminService.create_staff(role, datos)` (sin auto-login; la contraseña la define el admin y se valida con la misma política del registro). `POST /api/v1/users` (`require_role(ADMIN)`). Para DELIVERY crea también `UserProfile` con `vehicle_type`, `capacity`. Se agrega el enum `VehicleType` (`moto/bici/auto/a_pie`), que existía como `CHECK` en §6.1 pero no en el catálogo de §7 — se usa para validar en el borde; la columna sigue siendo `String` con su `CHECK`, así no hace falta migración.
+  **Decisiones:**
+  1. **No se pueden crear CUSTOMER acá** (`role` es un `Literal[ADMIN, DELIVERY]`): los clientes se registran solos y crearlos por esta vía los dejaría **sin carrito ni saldo**, o sea clientes a medias.
+  2. **El DELIVERY nuevo arranca en `NO_DISPONIBLE`**: si arrancara disponible, el admin podría asignarle pedidos antes de que empiece el turno o antes de que la persona sepa que tiene cuenta.
+  3. **Validación cruzada por rol**: DELIVERY **exige** `vehicle_type` (RF-DLV-01 lista el transporte entre sus datos y marca solo la capacidad como opcional) y ADMIN **rechaza** `vehicle_type`/`capacity`, para no guardar datos sin sentido.
+  4. **Sin auto-login ni tokens en la respuesta**: el admin crea la cuenta y pasa las credenciales; la sesión la abre la persona.
+  **Dependencia circular encontrada al implementarlo:** poner la clase en `services/user_service.py` cerraba un ciclo — `UserRepository` importa las reglas puras de ese módulo, así que el módulo no puede importar el repositorio (los repositorios están **debajo** de los servicios). Se resolvió con un módulo nuevo, `services/user_admin_service.py` (`UserAdminService`), que además es el lugar natural para los cambios de rol/estado de `T-1.7.2`. Se prefirió eso antes que forzar el nombre `UserService.create_staff` del roadmap.
+  _Prueba:_ test: admin crea un delivery; customer intentándolo → 403. **Verificado con 25 tests**: el repartidor creado **se loguea de verdad**, contraseña hasheada y nunca en la respuesta, staff sin carrito ni saldo, provider `local` y estado `ACTIVE`, CUSTOMER y DELIVERY → 403 sin crear nada, `role=CUSTOMER` → 422, vehículo faltante o inválido → 422, ADMIN con datos de reparto → 422, capacidad 0 o negativa → 422 y opcional cuando se omite, email duplicado → 409 (también si el email ya es de un cliente, y con otras mayúsculas), y email normalizado. _Depende de:_ T-1.5.2
 
 - [ ] **T-1.7.2 · [Backend] Listar y editar usuarios (admin)**
   `GET /api/v1/users?role=&page=` y `PATCH /api/v1/users/{id}` (rol, `status`). Auditar cambios de rol/estado en `audit_log` (modelo mínimo si no existe aún).

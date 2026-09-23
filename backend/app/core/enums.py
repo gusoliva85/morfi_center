@@ -60,6 +60,17 @@ class ShiftStatus(str, Enum):
     FINISHED = "FINISHED"
 
 
+class VehicleType(str, Enum):
+    """Transporte del repartidor. Estos valores ya existían como `CHECK` en
+    `user_profiles` (§6.1) pero no estaban en el catálogo de enums de §7, igual
+    que los tres que agregó T-0.2.2."""
+
+    MOTO = "moto"
+    BICI = "bici"
+    AUTO = "auto"
+    A_PIE = "a_pie"
+
+
 class DriverStatus(str, Enum):
     DISPONIBLE = "DISPONIBLE"
     NO_DISPONIBLE = "NO_DISPONIBLE"

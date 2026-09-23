@@ -1,7 +1,13 @@
-from pydantic import BaseModel, ConfigDict, field_validator
+from typing import Literal
 
-from app.core.enums import Role
-from app.services.user_service import is_valid_name
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+
+from app.core.enums import Role, VehicleType
+from app.services.user_service import (
+    is_valid_email,
+    is_valid_name,
+    validate_password,
+)
 
 
 class UserOut(BaseModel):
@@ -16,6 +22,65 @@ class UserOut(BaseModel):
     email: str
     phone: str | None
     role: Role
+
+
+class StaffCreateIn(BaseModel):
+    """Alta de ADMIN o DELIVERY por un admin (`POST /users`).
+
+    `role` es un `Literal` de esos dos valores a propósito: los CUSTOMER se dan
+    de alta solos por `/auth/register`, y dejar que este endpoint los cree
+    abriría una vía paralela sin carrito ni saldo.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal[Role.ADMIN, Role.DELIVERY]
+    first_name: str
+    last_name: str
+    email: str
+    password: str
+    phone: str | None = None
+    vehicle_type: VehicleType | None = None
+    capacity: int | None = None
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def _name_is_required(cls, v: str) -> str:
+        if not is_valid_name(v):
+            raise ValueError("Requerido.")
+        return v
+
+    @field_validator("email")
+    @classmethod
+    def _email_has_valid_format(cls, v: str) -> str:
+        if not is_valid_email(v.strip()):
+            raise ValueError("El email no tiene un formato válido.")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def _password_meets_the_policy(cls, v: str) -> str:
+        if not validate_password(v):
+            raise ValueError("Debe tener al menos 8 caracteres, con una letra y un número.")
+        return v
+
+    @field_validator("capacity")
+    @classmethod
+    def _capacity_is_positive(cls, v: int | None) -> int | None:
+        if v is not None and v <= 0:
+            raise ValueError("Debe ser mayor a 0.")
+        return v
+
+    @model_validator(mode="after")
+    def _fields_match_the_role(self) -> "StaffCreateIn":
+        # RF-DLV-01: el transporte es parte de los datos del repartidor (la
+        # capacidad es la única explícitamente opcional).
+        if self.role == Role.DELIVERY and self.vehicle_type is None:
+            raise ValueError("vehicle_type es requerido para un repartidor.")
+        # Un admin no reparte: aceptar estos campos guardaría datos sin sentido.
+        if self.role == Role.ADMIN and (self.vehicle_type or self.capacity):
+            raise ValueError("vehicle_type y capacity no aplican a un ADMIN.")
+        return self
 
 
 class ProfileUpdateIn(BaseModel):
