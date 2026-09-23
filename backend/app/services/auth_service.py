@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.enums import AuthProvider, Role, UserStatus
 from app.core.errors import (
     ConflictError,
+    DomainError,
     ForbiddenError,
     NotAuthenticatedError,
     TokenInvalidError,
@@ -114,8 +115,42 @@ class AuthService:
         if user.status != UserStatus.ACTIVE:
             raise ForbiddenError(ACCOUNT_NOT_ACTIVE)
 
-        self.revoke_refresh(payload)
+        try:
+            self.revoke_refresh(payload)
+        except IntegrityError as exc:
+            # Dos usos del mismo refresh a la vez (dos pestañas, doble click, o
+            # un token robado usado en paralelo): los dos pasan el chequeo de
+            # arriba y el segundo choca contra la PK. Es exactamente el caso que
+            # la rotación quiere frenar → 401, no un 500.
+            self.session.rollback()
+            raise TokenInvalidError(SESSION_EXPIRED) from exc
+
         return user
+
+    def logout(self, refresh_token: str | None) -> None:
+        """Cierra la sesión quemando el refresh, sin fallar nunca.
+
+        Un logout que devuelve error dejaría al usuario sin forma de cerrar
+        sesión: sin cookie, con una vencida, alterada o ya quemada, igual
+        termina bien (la cookie se borra en el endpoint). Es idempotente.
+        """
+        if not refresh_token:
+            return
+
+        try:
+            payload = decode_token(refresh_token)
+        except DomainError:
+            return  # vencido, roto o firmado con otra clave: ya no sirve para nada
+
+        if payload.get("type") != "refresh" or not payload.get("jti"):
+            return
+        if self.session.get(RevokedToken, payload["jti"]) is not None:
+            return  # ya estaba quemado
+
+        try:
+            self.revoke_refresh(payload)
+        except IntegrityError:
+            self.session.rollback()  # otro logout simultáneo ya lo quemó: está bien igual
 
     def revoke_refresh(self, payload: dict) -> None:
         """Marca un refresh como usado/inválido (rotación y logout)."""

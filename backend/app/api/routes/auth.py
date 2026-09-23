@@ -84,3 +84,23 @@ def refresh(
     user = AuthService(session).rotate_refresh(mc_refresh)
     set_refresh_cookie(response, user)
     return session_response(user)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    response: Response,
+    session: SessionDep,
+    mc_refresh: Annotated[str | None, Cookie()] = None,
+) -> None:
+    """Cierra la sesión: quema el refresh y borra la cookie. Siempre responde
+    204, incluso sin sesión — cerrar sesión nunca debería poder fallar."""
+    AuthService(session).logout(mc_refresh)
+    # Los mismos atributos que al crearla: si el path o el samesite no coinciden,
+    # el navegador no la reconoce como la misma cookie y no la borra.
+    response.delete_cookie(
+        key=REFRESH_COOKIE_NAME,
+        path=refresh_cookie_path(),
+        httponly=True,
+        secure=settings.app_env == "production",
+        samesite=settings.cookie_samesite,
+    )

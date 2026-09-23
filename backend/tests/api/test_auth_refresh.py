@@ -172,6 +172,23 @@ async def test_login_after_a_burnt_refresh_works_again(client, logged_in):
     assert response.status_code == 200
 
 
+async def test_using_the_same_refresh_twice_at_once_is_a_401_not_a_crash(
+    client, session, logged_in, monkeypatch
+):
+    """Dos pestañas (o un token robado usado en paralelo) pueden pasar las dos el
+    chequeo de "ya quemado" y chocar contra la clave primaria al registrarlo. Eso
+    es justo lo que la rotación quiere frenar: tiene que salir 401, no un 500."""
+    await client.post(REFRESH)
+
+    # Simula la carrera: el chequeo no ve la revocación que ya existe.
+    monkeypatch.setattr(session, "get", lambda model, pk: None)
+    client.cookies.set("mc_refresh", logged_in)
+    response = await client.post(REFRESH)
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "NOT_AUTHENTICATED"
+
+
 async def test_two_sessions_can_refresh_independently(client, session, logged_in):
     """Dos dispositivos: rotar el refresh de uno no debe desloguear al otro."""
     second = await client.post(LOGIN, json={"email": EMAIL, "password": PASSWORD})

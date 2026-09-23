@@ -1,6 +1,11 @@
 import pytest
 
-from app.services.user_service import is_valid_email, is_valid_name, normalize_email, validate_password
+from app.services.user_service import (
+    is_valid_email,
+    is_valid_name,
+    normalize_email,
+    validate_password,
+)
 
 
 def test_normalize_email_strips_whitespace():
