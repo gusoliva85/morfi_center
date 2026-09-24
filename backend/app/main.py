@@ -7,6 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.routes import auth, users
+from app.api.routes import settings as settings_routes
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 from app.core.logging import RequestIdMiddleware, configure_logging
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router, prefix=settings.api_prefix)
     app.include_router(users.router, prefix=settings.api_prefix)
+    app.include_router(settings_routes.router, prefix=settings.api_prefix)
 
     return app
 

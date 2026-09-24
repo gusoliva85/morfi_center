@@ -8,7 +8,7 @@ from app.core.enums import SettingValueType
 from app.models import SystemSetting, User
 
 
-def _infer_value_type(value: Any) -> SettingValueType:
+def infer_value_type(value: Any) -> SettingValueType:
     # bool antes que int: en Python `isinstance(True, int)` es True.
     if isinstance(value, bool):
         return SettingValueType.BOOL
@@ -58,7 +58,7 @@ class SettingsRepository:
             row.description = description
 
         row.value = json.dumps(value)
-        row.value_type = _infer_value_type(value)
+        row.value_type = infer_value_type(value)
         row.updated_by = actor.id if actor else None
         self.session.flush()
         return row

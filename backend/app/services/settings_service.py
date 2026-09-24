@@ -1,13 +1,21 @@
+import json
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy.orm import Session
 
-from app.core.enums import CoverageMode, PromoTieBreaker, SettingKey, ShippingMode
+from app.core.enums import (
+    CoverageMode,
+    PromoTieBreaker,
+    SettingKey,
+    SettingValueType,
+    ShippingMode,
+)
 from app.core.errors import DomainValidationError, NotFoundError, SettingCorruptError
-from app.models import SystemSetting, User
-from app.repositories.settings_repository import SettingsRepository
+from app.models import AuditLog, User
+from app.repositories.settings_repository import SettingsRepository, infer_value_type
 from app.schemas.settings import (
     CoverageOrigin,
     Money,
@@ -33,6 +41,20 @@ class SettingSpec:
     adapter: TypeAdapter
     default: Any  # valor JSON (lo que se guarda), no el objeto ya validado
     description: str
+
+
+@dataclass(frozen=True)
+class SettingView:
+    """Una configuración tal como la ve la API: el valor vigente (guardado o
+    default) más de dónde viene."""
+
+    key: str
+    value: Any
+    value_type: SettingValueType
+    description: str
+    is_default: bool  # True: nadie la guardó todavía, rige el valor por defecto
+    updated_at: datetime | None
+    updated_by: int | None
 
 
 def _spec(key: SettingKey, shape: Any, default: Any, description: str) -> SettingSpec:
@@ -232,13 +254,57 @@ class SettingsService:
     def get_order_code_prefix(self) -> str:
         return self.get(SettingKey.ORDERS_CODE_PREFIX)
 
+    def list_settings(self) -> list[SettingView]:
+        """Las 11 claves, guardadas o no: el panel de admin ve el set completo
+        desde el primer día, con `is_default` marcando las que nadie tocó.
+
+        Devuelve el valor tal como está guardado, **sin validarlo**: si una
+        quedó corrupta (`SETTING_CORRUPT` al leerla), el admin tiene que poder
+        verla y pisarla desde acá en vez de quedar trabado.
+        """
+        return [self._view(spec) for spec in SPECS.values()]
+
+    def view(self, key: str) -> SettingView:
+        return self._view(self._spec_for(key))
+
+    def _view(self, spec: SettingSpec) -> SettingView:
+        row = self.repo.get_typed(spec.key.value)
+        if row is None:
+            return SettingView(
+                key=spec.key.value,
+                value=spec.default,
+                value_type=infer_value_type(spec.default),
+                description=spec.description,
+                is_default=True,
+                updated_at=None,
+                updated_by=None,
+            )
+        try:
+            stored_value = json.loads(row.value)
+        except ValueError:
+            stored_value = row.value  # ni JSON es: se muestra el texto crudo para poder repararlo
+        return SettingView(
+            key=spec.key.value,
+            value=stored_value,
+            value_type=row.value_type,
+            description=spec.description,
+            is_default=False,
+            updated_at=row.updated_at,
+            updated_by=row.updated_by,
+        )
+
     # ---------- escritura ----------
 
-    def set(self, key: str, value: Any, actor: User | None = None) -> SystemSetting:
-        """Valida `value` contra la forma de `key` y lo guarda.
+    def set(
+        self, key: str, value: Any, actor: User | None = None, *, ip: str | None = None
+    ) -> SettingView:
+        """Valida `value` contra la forma de `key` y lo guarda, dejando rastro
+        en `audit_log` con el valor anterior y el nuevo.
 
         Lo que se guarda es la forma canónica que devuelve la validación (sin
         espacios sobrantes, `weekdays` ordenados...), no lo que llegó tal cual.
+        Si el valor resultante es el que ya regía, no se escribe ni se audita
+        nada: un PUT que no cambia nada no debe ensuciar el historial.
         """
         spec = self._spec_for(key)
         try:
@@ -246,7 +312,22 @@ class SettingsService:
         except ValidationError as exc:
             raise DomainValidationError(INVALID_VALUE, {"fields": _fields(exc)}) from exc
         canonical = spec.adapter.dump_python(validated, mode="json")
-        return self.repo.set(spec.key.value, canonical, actor)
+
+        before = self._view(spec).value
+        if canonical != before:
+            self.repo.set(spec.key.value, canonical, actor, description=spec.description)
+            self.session.add(
+                AuditLog(
+                    actor_id=actor.id if actor else None,
+                    action="setting.update",
+                    entity_type="setting",
+                    entity_id=spec.key.value,
+                    data=json.dumps({"before": before, "after": canonical}, ensure_ascii=False),
+                    ip=ip,
+                )
+            )
+            self.session.flush()
+        return self._view(spec)
 
     def _spec_for(self, key: str) -> SettingSpec:
         try:

@@ -143,6 +143,23 @@
               Vas a poder guardar tus direcciones para pedir más rápido. Todavía no está disponible.
             </p>
           </section>
+
+          <!-- El header solo muestra "Cerrar sesión" en escritorio; en mobile
+               esta es la única salida. `data-session-logout` ya lo conecta
+               auth.js para toda la app. -->
+          <section class="rounded-2xl border-2 border-bark/12 bg-cream p-5">
+            <h2 class="font-display text-[15px] font-bold">Sesión</h2>
+            <p class="mt-2 text-[12px] leading-relaxed text-bark/50">
+              Cerrá la sesión para entrar con otra cuenta.
+            </p>
+            <button
+              class="mt-3 w-full rounded-2xl border-2 border-brick/40 px-6 py-3 text-[13px] font-semibold text-brick transition hover:bg-brick hover:text-cream"
+              type="button"
+              data-session-logout
+            >
+              Cerrar sesión
+            </button>
+          </section>
         </div>
 
       </div>

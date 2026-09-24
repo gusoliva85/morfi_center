@@ -5,7 +5,8 @@ rechazan campos de más: un error de tipeo en el panel de admin tiene que
 fallar al guardar, no descubrirse el día que llega un pedido.
 """
 
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import (
@@ -20,6 +21,8 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+
+from app.core.enums import SettingValueType
 
 Number = StrictInt | StrictFloat
 
@@ -136,3 +139,29 @@ class PaymentTransfer(_Shape):
         if v and not (v.isdigit() and len(v) == 22):
             raise ValueError("El CBU/CVU debe tener 22 dígitos.")
         return v
+
+
+class SettingOut(BaseModel):
+    """Una configuración para el panel de admin. `value` es JSON libre porque
+    cada clave tiene su propia forma; `is_default` dice si rige el valor por
+    defecto (nadie la guardó todavía)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    key: str
+    value: Any
+    value_type: SettingValueType
+    description: str
+    is_default: bool
+    updated_at: datetime | None
+    updated_by: int | None
+
+
+class SettingListOut(BaseModel):
+    items: list[SettingOut]
+
+
+class SettingUpdateIn(BaseModel):
+    """`{"value": ...}`: la forma del valor la valida el servicio, según la clave."""
+
+    value: Any

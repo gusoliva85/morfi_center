@@ -526,9 +526,16 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   _Prueba:_ **Verificado con 89 tests** (suite completa: 532 pasan): los 11 defaults pasan su propio molde; leer sin guardar da el default tipado; guardar y leer de vuelta; guardar inválido (tipo equivocado, fuera de rango, campo de más, horario incoherente, tiers desordenados, CBU corto, zona horaria inexistente, etc.) → error y **no queda nada escrito**; dato corrupto o JSON roto en la base → `SETTING_CORRUPT`. _Depende de:_ T-2.1.1
   _Pendiente para `T-2.2.2`:_ hoy `core/timezone.py` lee la zona de `APP_TIMEZONE` (variable de entorno) y existe también la clave `timezone` en la base; ahí se decide cuál manda.
 
-- [ ] **T-2.1.3 · [Backend] Endpoints de configuración (admin)**
+- [x] **T-2.1.3 · [Backend] Endpoints de configuración (admin)**
   `GET /api/v1/settings` (todas), `PUT /api/v1/settings/{key}` con validación y `audit_log`.
-  _Prueba:_ test: admin actualiza `payment.transfer`; customer → 403. _Depende de:_ T-2.1.2, T-1.5.2
+  **Decisiones:**
+  1. **`GET` devuelve siempre las 11 claves**, hayan sido guardadas o no. Las que nadie tocó vienen con su valor por defecto y `is_default: true`; el panel de admin (`T-2.4.5`) muestra el set completo desde el primer día. Cada ítem trae `key`, `value`, `value_type`, `description`, `is_default`, `updated_at`, `updated_by`.
+  2. **`PUT /settings/{key}` con `{"value": ...}`** valida contra la forma de la clave (`T-2.1.2`) y responde con el valor **canónico** que quedó guardado. Clave inventada → 404; valor inválido → 422 con el campo señalado y **nada** queda escrito ni auditado.
+  3. **Auditoría** en `audit_log` (`setting.update`, con `before`/`after`, quién y desde qué IP). `before` es el valor que regía (el default si nunca se había guardado). **Un PUT que deja el mismo valor no escribe ni audita nada**, igual que el PATCH de usuarios.
+  4. **Un dato corrupto se puede ver y reparar desde el panel:** el `GET` lo muestra crudo sin romperse y el `PUT` lo pisa (leerlo desde el código de negocio sí da `SETTING_CORRUPT`, `T-2.1.2`).
+  5. `SettingsService.set()` ahora devuelve una `SettingView` (no la fila) y audita; `infer_value_type` del repositorio pasó a ser público.
+  _Prueba:_ **Verificado con 22 tests de API** (suite completa: 554 pasan): admin actualiza `payment.transfer`; customer y delivery → 403 y no se guarda nada; sin sesión → 401; listado completo con defaults y tipos; auditoría con antes/después (incluido el "antes" = default); PUT sin cambio no audita; inválido → 422 sin efectos; clave desconocida → 404; cuerpo sin `value` → 422; dato corrupto visible y reparable. _Depende de:_ T-2.1.2, T-1.5.2
+  _Nota para `T-2.1.4`:_ como el `GET` ya devuelve el set completo sin seed, el seed pasa a ser solo "materializar" los defaults como filas (útil para inspeccionar la base y para que el deploy deje todo explícito), no un requisito para que la API funcione.
 
 - [ ] **T-2.1.4 · [Backend + Docs] Seed de `system_settings`**
   `db/seed.py` inserta todas las claves con sus defaults.
