@@ -1,22 +1,52 @@
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from typing import Any
 
+from pydantic import ValidationError
 from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.enums import Role, ShiftStatus
-from app.core.errors import ForbiddenError, InvalidTransitionError
+from app.core.errors import (
+    DomainValidationError,
+    ForbiddenError,
+    InvalidTransitionError,
+    NotFoundError,
+)
 from app.core.timezone import now_utc, resolve_shift_instant, to_local
 from app.models import AuditLog, Shift, User
 from app.repositories.shift_repository import ShiftRepository
-from app.services.settings_service import SettingsService
+from app.schemas.settings import ShiftSchedule
+from app.services.settings_service import SettingsService, fields_from_validation_error
 
 NO_SERVICE = "NO_SERVICE"  # hoy no es día de operación: no hay turno
 
+SHIFT_NOT_FOUND = "No existe ese turno."
+INVALID_SCHEDULE = "Los horarios del turno no son válidos."
+LOCKED_AFTER_CLOSING = (
+    "El turno ya cerró y sus efectos ya se aplicaron: no se pueden cambiar la apertura, "
+    "el cierre ni la ventana de cancelación (sí las horas estimadas)."
+)
+NOT_TODAYS_SHIFT = "Solo se puede abrir o cerrar el turno de hoy."
+ALREADY_OPEN = "El turno ya está abierto."
+ALREADY_CLOSED = "El turno ya está cerrado."
+NOT_OPEN_YET = "El turno todavía no abrió: para cambiar el horario usá la edición del turno."
+CLOSED_CANNOT_REOPEN = (
+    "El turno ya cerró: para reabrirlo hay que ampliar la hora de cierre desde la edición "
+    "del turno (mientras sus efectos de cierre no se hayan aplicado)."
+)
+CLOSE_TOO_SOON = "El turno acaba de abrir: esperá al menos un minuto para cerrarlo."
+
+# Qué campos de la API se llaman distinto en el molde de horarios (`open`/`close`).
+_API_FIELD = {"open": "open_time", "close": "close_time"}
+_TO_SCHEDULE_FIELD = {"open_time": "open", "close_time": "close"}
+_LOCKED_FIELDS = ("open_time", "close_time", "cancel_window_min")
+
 ONLY_ADMIN = "Solo un administrador puede pasar el turno a producción."
+ONLY_ADMIN_EDIT = "Solo un administrador puede modificar los turnos."
 NOT_CLOSED_YET = "El turno todavía no cerró: hay que esperar a que terminen los pedidos."
 ALREADY_IN_PRODUCTION = "El turno ya está en producción (o más avanzado)."
 
@@ -36,6 +66,16 @@ _CLOSE_EFFECTS: list[CloseEffect] = []
 
 def register_close_effect(effect: CloseEffect) -> None:
     _CLOSE_EFFECTS.append(effect)
+
+
+@dataclass(frozen=True)
+class ShiftDetail:
+    """Un turno más lo que se deriva de la hora, para el panel de admin."""
+
+    shift: Shift
+    window: "ShiftWindow"
+    status: ShiftStatus  # ciclo de vida completo (`effective_status`)
+    ordering_open: bool
 
 
 @dataclass(frozen=True)
@@ -84,6 +124,14 @@ def current_status(shift: Shift, now: datetime, tz: str) -> ShiftStatus:
     if now < window.close_at:
         return ShiftStatus.OPEN
     return ShiftStatus.CLOSED
+
+
+def effective_status(shift: Shift, now: datetime, tz: str) -> ShiftStatus:
+    """El estado del ciclo de vida completo: si el admin ya avanzó el turno
+    (`IN_PRODUCTION`, ...) es ese; si no, el que dice el reloj."""
+    if shift.status in _PAST_CLOSING:
+        return shift.status
+    return current_status(shift, now, tz)
 
 
 def is_ordering_open(shift: Shift, now: datetime, tz: str) -> bool:
@@ -217,15 +265,13 @@ class ShiftService:
         before = shift.status
         self.on_shift_closed(shift, now)
         self.shifts.set_status(shift, ShiftStatus.IN_PRODUCTION)
-        self.session.add(
-            AuditLog(
-                actor_id=actor.id,
-                action="shift.to_production",
-                entity_type="shift",
-                entity_id=str(shift.id),
-                data=json.dumps({"before": before.value, "after": shift.status.value}),
-                ip=ip,
-            )
+        self._audit(
+            "shift.to_production",
+            shift,
+            {"status": before.value},
+            {"status": shift.status.value},
+            actor,
+            ip,
         )
         self.session.flush()
         return shift
@@ -256,4 +302,204 @@ class ShiftService:
             window=window,
             ordering_open=is_ordering_open(shift, now, tz),
             seconds_to_close=seconds_to_close,
+        )
+
+    # ---------- panel de admin (T-2.4.2) ----------
+
+    def get_shift(self, shift_id: int) -> Shift:
+        shift = self.shifts.get_by_id(shift_id)
+        if shift is None:
+            raise NotFoundError(SHIFT_NOT_FOUND)
+        return shift
+
+    def details(self, shifts: list[Shift], now: datetime | None = None) -> list[ShiftDetail]:
+        now = now or now_utc()
+        tz = self.settings.get_timezone()  # una sola lectura para todo el listado
+        return [
+            ShiftDetail(
+                shift=shift,
+                window=resolve_window(shift, tz),
+                status=effective_status(shift, now, tz),
+                ordering_open=is_ordering_open(shift, now, tz),
+            )
+            for shift in shifts
+        ]
+
+    def detail(self, shift: Shift, now: datetime | None = None) -> ShiftDetail:
+        return self.details([shift], now)[0]
+
+    def list_shifts(
+        self,
+        service_date: date | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        now: datetime | None = None,
+    ) -> tuple[list[ShiftDetail], int]:
+        """Listado para el admin. Abrir el panel también crea el turno de hoy si
+        todavía no existe (§9.9), así que siempre lo encuentra ahí."""
+        now = now or now_utc()
+        self.ensure_today_shift(now)
+        shifts, total = self.shifts.list(service_date, page, page_size)
+        return self.details(shifts, now), total
+
+    def update_shift(
+        self,
+        shift: Shift,
+        changes: Mapping[str, Any],
+        actor: User,
+        *,
+        ip: str | None = None,
+    ) -> Shift:
+        """Ajusta los horarios / la ventana de cancelación de **un turno
+        concreto** (la plantilla de los turnos futuros es `shift.default`).
+
+        Solo cambia lo que venga en `changes` (semántica de PATCH), se valida
+        contra las mismas reglas que la plantilla mirando el turno **resultante**
+        (por ejemplo, adelantar el cierre antes de la apertura falla), y queda
+        en `audit_log` con lo anterior y lo nuevo; sin cambio real no se audita.
+
+        Una vez aplicados los efectos del cierre (stock congelado, etc.) ya no
+        se pueden tocar la apertura, el cierre ni la ventana de cancelación:
+        reabrir un turno no deshace lo que el cierre ya hizo. Las horas
+        estimadas (`prep_eta`, `dispatch_eta`) son informativas y siempre se
+        pueden corregir.
+        """
+        if actor.role != Role.ADMIN:
+            raise ForbiddenError(ONLY_ADMIN_EDIT)
+
+        current = {
+            "open_time": shift.open_time,
+            "close_time": shift.close_time,
+            "prep_eta": shift.prep_eta,
+            "dispatch_eta": shift.dispatch_eta,
+            "cancel_window_min": shift.cancel_window_min,
+        }
+        candidate = {**current, **changes}
+
+        try:
+            validated = ShiftSchedule.model_validate(
+                {_TO_SCHEDULE_FIELD.get(key, key): value for key, value in candidate.items()}
+            )
+        except ValidationError as exc:
+            fields = [
+                {**f, "field": _API_FIELD.get(f["field"], f["field"])}
+                for f in fields_from_validation_error(exc)
+            ]
+            raise DomainValidationError(INVALID_SCHEDULE, {"fields": fields}) from exc
+
+        result = {
+            "open_time": validated.open,
+            "close_time": validated.close,
+            "prep_eta": validated.prep_eta,
+            "dispatch_eta": validated.dispatch_eta,
+            "cancel_window_min": validated.cancel_window_min,
+        }
+        changed = [key for key in changes if result[key] != current[key]]
+        if not changed:
+            return shift  # un PATCH que deja todo igual no ensucia el historial
+
+        locked = shift.closed_effects_applied_at is not None or shift.status in _PAST_CLOSING
+        if locked and any(key in _LOCKED_FIELDS for key in changed):
+            raise InvalidTransitionError(LOCKED_AFTER_CLOSING)
+
+        for key in changed:
+            setattr(shift, key, result[key])
+        self._audit(
+            "shift.update",
+            shift,
+            {key: current[key] for key in changed},
+            {key: result[key] for key in changed},
+            actor,
+            ip,
+        )
+        self.session.flush()
+        return shift
+
+    def transition(
+        self,
+        shift: Shift,
+        action: str,
+        actor: User,
+        now: datetime | None = None,
+        *,
+        ip: str | None = None,
+    ) -> Shift:
+        """Acciones manuales del admin sobre el turno: `open`, `close`,
+        `to_production`.
+
+        El estado abierto/cerrado se deriva de la hora y no se guarda, así que
+        "abrir ahora" y "cerrar ahora" se implementan **moviendo el horario al
+        minuto actual** (redondeado hacia abajo, para que el turno ya quede en
+        el estado pedido) y no con un estado forzado: hay un solo modelo, y la
+        hora que se ve en el turno es la real. Solo sobre el turno de hoy.
+        Cerrar aplica además los efectos del cierre en el acto.
+        """
+        if actor.role != Role.ADMIN:
+            raise ForbiddenError(ONLY_ADMIN_EDIT)
+        now = now or now_utc()
+        if action == "to_production":
+            return self.to_production(shift, actor, now, ip=ip)
+        if action not in ("open", "close"):
+            raise DomainValidationError(
+                "Acción desconocida.",
+                {
+                    "fields": [
+                        {"field": "action", "message": "Opciones: open, close, to_production."}
+                    ]
+                },
+            )
+
+        if shift.status in _PAST_CLOSING:
+            raise InvalidTransitionError(ALREADY_IN_PRODUCTION)
+        tz = self.settings.get_timezone()
+        local_now = to_local(now, tz)
+        if local_now.date() != shift.service_date:
+            raise InvalidTransitionError(NOT_TODAYS_SHIFT)
+
+        status = current_status(shift, now, tz)
+        minute = local_now.strftime("%H:%M")  # HH:MM de hora local, redondeado hacia abajo
+
+        if action == "close":
+            if status is ShiftStatus.CLOSED:
+                raise InvalidTransitionError(ALREADY_CLOSED)
+            if status is ShiftStatus.SCHEDULED:
+                raise InvalidTransitionError(NOT_OPEN_YET)
+            if minute <= shift.open_time:
+                raise InvalidTransitionError(CLOSE_TOO_SOON)
+            before, shift.close_time = shift.close_time, minute
+            self._audit(
+                "shift.close", shift, {"close_time": before}, {"close_time": minute}, actor, ip
+            )
+            self.session.flush()
+            self.on_shift_closed(shift, now)  # el cierre ya es <= ahora: se aplica en el acto
+        else:
+            if status is ShiftStatus.OPEN:
+                raise InvalidTransitionError(ALREADY_OPEN)
+            if status is ShiftStatus.CLOSED:
+                raise InvalidTransitionError(CLOSED_CANNOT_REOPEN)
+            before, shift.open_time = shift.open_time, minute
+            self._audit(
+                "shift.open", shift, {"open_time": before}, {"open_time": minute}, actor, ip
+            )
+            self.session.flush()
+        return shift
+
+    def _audit(
+        self,
+        action: str,
+        shift: Shift,
+        before: dict[str, Any],
+        after: dict[str, Any],
+        actor: User,
+        ip: str | None,
+    ) -> None:
+        self.session.add(
+            AuditLog(
+                actor_id=actor.id,
+                action=action,
+                entity_type="shift",
+                entity_id=str(shift.id),
+                data=json.dumps({"before": before, "after": after}, ensure_ascii=False),
+                ip=ip,
+            )
         )

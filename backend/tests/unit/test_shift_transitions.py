@@ -265,7 +265,10 @@ def test_going_to_production_leaves_an_audit_trail(service, session, shift, make
     assert entry.entity_id == str(shift.id)
     assert entry.actor_id == admin.id
     assert entry.ip == "203.0.113.7"
-    assert json.loads(entry.data) == {"before": "SCHEDULED", "after": "IN_PRODUCTION"}
+    assert json.loads(entry.data) == {
+        "before": {"status": "SCHEDULED"},
+        "after": {"status": "IN_PRODUCTION"},
+    }
 
 
 def test_a_rejected_attempt_leaves_no_audit_trail(service, session, shift, make_user):

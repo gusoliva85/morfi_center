@@ -77,15 +77,31 @@ class _Shape(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class ShiftDefault(_Shape):
-    """Plantilla con la que se crea el turno de cada día. `weekdays` usa la
-    numeración ISO: 1 = lunes ... 7 = domingo."""
+class ShiftSchedule(_Shape):
+    """Los horarios de un turno: los mismos en la plantilla (`shift.default`) y
+    en un turno concreto que el admin ajusta, así que las reglas viven una sola
+    vez acá."""
 
     open: HHMM
     close: HHMM
     prep_eta: HHMM | None = None
     dispatch_eta: HHMM | None = None
     cancel_window_min: Annotated[StrictInt, Field(ge=0)]
+
+    @model_validator(mode="after")
+    def _coherent_schedule(self) -> "ShiftSchedule":
+        duration = _minutes(self.close) - _minutes(self.open)
+        if duration <= 0:
+            raise ValueError("La hora de cierre debe ser posterior a la de apertura.")
+        if self.cancel_window_min > duration:
+            raise ValueError("La ventana de cancelación no puede ser más larga que el turno.")
+        return self
+
+
+class ShiftDefault(ShiftSchedule):
+    """Plantilla con la que se crea el turno de cada día. `weekdays` usa la
+    numeración ISO: 1 = lunes ... 7 = domingo."""
+
     weekdays: Annotated[list[Annotated[StrictInt, Field(ge=1, le=7)]], Field(min_length=1)]
 
     @field_validator("weekdays")
@@ -94,15 +110,6 @@ class ShiftDefault(_Shape):
         if len(set(v)) != len(v):
             raise ValueError("Hay días repetidos.")
         return sorted(v)
-
-    @model_validator(mode="after")
-    def _coherent_schedule(self) -> "ShiftDefault":
-        duration = _minutes(self.close) - _minutes(self.open)
-        if duration <= 0:
-            raise ValueError("La hora de cierre debe ser posterior a la de apertura.")
-        if self.cancel_window_min > duration:
-            raise ValueError("La ventana de cancelación no puede ser más larga que el turno.")
-        return self
 
 
 class CoverageOrigin(_Shape):

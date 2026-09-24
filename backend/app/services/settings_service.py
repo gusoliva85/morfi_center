@@ -185,7 +185,7 @@ def _explain(error: dict[str, Any]) -> str:
     return error["msg"].removeprefix("Value error, ")
 
 
-def _fields(exc: ValidationError) -> list[dict[str, str]]:
+def fields_from_validation_error(exc: ValidationError) -> list[dict[str, str]]:
     return [
         {
             "field": ".".join(str(part) for part in error["loc"]) or "value",
@@ -311,7 +311,9 @@ class SettingsService:
         try:
             validated = spec.adapter.validate_python(value)
         except ValidationError as exc:
-            raise DomainValidationError(INVALID_VALUE, {"fields": _fields(exc)}) from exc
+            raise DomainValidationError(
+                INVALID_VALUE, {"fields": fields_from_validation_error(exc)}
+            ) from exc
         canonical = spec.adapter.dump_python(validated, mode="json")
 
         before = self._view(spec).value

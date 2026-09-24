@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.enums import ServiceType, ShiftStatus
@@ -11,6 +11,26 @@ from app.schemas.settings import ShiftDefault
 class ShiftRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    def get_by_id(self, shift_id: int) -> Shift | None:
+        return self.session.get(Shift, shift_id)
+
+    def list(
+        self, service_date: date | None = None, page: int = 1, page_size: int = 20
+    ) -> tuple[list[Shift], int]:
+        """Turnos del más reciente al más viejo, opcionalmente de una fecha, y
+        el total (para paginar)."""
+        query = select(Shift)
+        count = select(func.count()).select_from(Shift)
+        if service_date is not None:
+            query = query.where(Shift.service_date == service_date)
+            count = count.where(Shift.service_date == service_date)
+        rows = self.session.scalars(
+            query.order_by(Shift.service_date.desc(), Shift.id.desc())
+            .limit(page_size)
+            .offset((page - 1) * page_size)
+        )
+        return list(rows), self.session.scalar(count)
 
     def get_by_date_type(
         self, service_date: date, service_type: ServiceType = ServiceType.LUNCH
