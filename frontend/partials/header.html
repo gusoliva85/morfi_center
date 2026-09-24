@@ -27,7 +27,19 @@
     Ingresar
   </a>
 </div>
-<button class="blob relative grid h-11 w-11 place-items-center bg-bark text-cream" data-cart-toggle aria-label="Ver mi vianda">
-  🧺
-  <span class="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-mustard text-[10px] font-bold text-bark" data-cart-count>3</span>
-</button>
+<div class="flex flex-col items-center gap-1">
+  <button class="blob relative grid h-11 w-11 place-items-center bg-bark text-cream" data-cart-toggle aria-label="Ver mi vianda">
+    🧺
+    <span class="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-mustard text-[10px] font-bold text-bark" data-cart-count>3</span>
+  </button>
+  <!-- Countdown chico, solo en mobile: en escritorio el ticket grande del
+       home ya cumple ese rol y no tenía el problema de espacio de mobile.
+       Estático por ahora, igual que el ticket grande (T-2.4.3, Fase 2, es
+       quien conecta los dos a la hora real del turno). -->
+  <div
+    class="whitespace-nowrap rounded-full border-2 border-brick/30 bg-brick/10 px-2.5 py-0.5 font-display text-[12px] font-bold tabular-nums text-brick lg:hidden"
+    data-countdown-chip
+  >
+    ⏳ 01:42:15
+  </div>
+</div>

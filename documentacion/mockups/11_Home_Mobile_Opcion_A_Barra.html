@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Opción A · Barra compacta — Morfi Center</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Caveat:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { display:['Bricolage Grotesque','system-ui','sans-serif'], hand:['Caveat','cursive'], sans:['Inter','system-ui','sans-serif'] },
+    colors: { kraft:'#E9DFC9', cream:'#F6EFDD', bark:'#3B2E22', forest:'#2F5D3A', mustard:'#D69A2D', brick:'#B0472F' },
+  }}};
+</script>
+<style>
+  .paper{background:#F6EFDD;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");box-shadow:0 2px 0 #ffffff80 inset,0 26px 50px -30px #3b2e2255,0 3px 10px -4px #3b2e2222;}
+  .blob{border-radius:62% 38% 44% 56% / 55% 48% 52% 45%;}
+  .blob2{border-radius:40% 60% 58% 42% / 52% 40% 60% 48%;}
+  .stamp{transform:rotate(-7deg);border:2px solid currentColor;}
+  .dashed{background-image:repeating-linear-gradient(90deg,#3b2e2233 0 8px,transparent 8px 16px);height:2px;}
+  .lift{transition:transform .3s ease;}
+  .lift:hover{transform:translateY(-4px) rotate(-.4deg);}
+</style>
+</head>
+<body class="bg-kraft font-sans text-bark antialiased">
+
+<p class="mx-auto max-w-[420px] px-3 pt-3 text-center text-[11px] uppercase tracking-[0.25em] text-bark/40">Opción A — countdown como barra compacta</p>
+
+<div class="mx-auto max-w-[420px] px-3 pb-24 pt-3">
+  <div class="paper relative overflow-hidden rounded-[24px] border border-bark/10">
+    <div class="blob pointer-events-none absolute -right-20 -top-20 h-56 w-56 bg-forest/10"></div>
+    <div class="blob2 pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 bg-mustard/15"></div>
+
+    <!-- HEADER (igual al real) -->
+    <header class="relative flex items-center justify-between gap-3 px-4 pt-5">
+      <div class="flex items-center gap-3">
+        <div class="blob grid h-11 w-11 place-items-center bg-forest font-display text-lg font-bold text-cream">M</div>
+        <div>
+          <div class="font-display text-xl font-bold leading-none">Morfi Center</div>
+          <div class="font-hand text-[15px] text-brick">cocina de olla, todos los días</div>
+        </div>
+      </div>
+      <button class="blob relative grid h-11 w-11 place-items-center bg-bark text-cream">
+        🧺
+        <span class="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-mustard text-[10px] font-bold text-bark">3</span>
+      </button>
+    </header>
+
+    <div class="relative px-4 py-5">
+
+      <div class="flex items-center justify-between gap-2">
+        <div class="inline-flex items-center gap-2 rounded-full bg-forest/12 px-3 py-1 text-[12px] font-semibold text-forest">
+          <span class="h-2 w-2 rounded-full bg-forest"></span> Pedidos abiertos
+        </div>
+      </div>
+
+      <h1 class="mt-3 font-display text-[26px] font-bold leading-[1.1]">
+        Pedí tu vianda de hoy
+      </h1>
+
+      <!-- COUNTDOWN: barra horizontal compacta, no un bloque grande -->
+      <div class="lift mt-3 flex items-center justify-between gap-3 rounded-2xl border-2 border-bark/15 bg-cream px-4 py-2.5">
+        <div class="flex items-center gap-2 text-[12px] text-bark/55">
+          <span class="text-[15px]">⏳</span>
+          <span>Cerramos en</span>
+        </div>
+        <div class="flex items-baseline gap-1 font-display text-[20px] font-bold tabular-nums text-brick">
+          01<span class="text-bark/30">:</span>42<span class="text-bark/30">:</span>15
+        </div>
+        <div class="whitespace-nowrap text-[11px] text-bark/45">hasta 12:00</div>
+      </div>
+
+      <!-- PLATO DEL DÍA: más chico, horizontal, sin dominar la pantalla -->
+      <article class="lift relative mt-4 flex overflow-hidden rounded-[20px] border-2 border-bark/12 bg-cream">
+        <div class="min-w-0 flex-1 p-3.5">
+          <div class="stamp inline-block rounded-md px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-brick">Plato del día</div>
+          <h3 class="mt-2 font-display text-[15px] font-bold leading-tight">Carne al horno con papas</h3>
+          <div class="mt-1.5 flex items-baseline gap-2">
+            <span class="text-[11px] text-bark/40 line-through">$15.000</span>
+            <span class="font-display text-[18px] font-bold text-brick">$10.000</span>
+          </div>
+        </div>
+        <div class="relative h-auto w-24 shrink-0">
+          <img src="../../frontend/assets/img/platos/carne_al_horno.jpg" alt="" class="absolute inset-0 h-full w-full object-cover" />
+        </div>
+      </article>
+
+      <!-- MENÚ: aparece enseguida, no al final del scroll -->
+      <div class="mt-5 flex items-baseline justify-between gap-3">
+        <h2 class="font-display text-[17px] font-bold">Lo que hay en la olla</h2>
+        <a href="#" class="shrink-0 whitespace-nowrap font-hand text-[15px] text-brick">ver todo →</a>
+      </div>
+
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button class="blob bg-bark px-3 py-1.5 text-[11px] font-medium text-cream">Principales</button>
+        <button class="blob border-2 border-bark/15 px-3 py-1.5 text-[11px] text-bark/60">Pastas</button>
+        <button class="blob border-2 border-bark/15 px-3 py-1.5 text-[11px] text-bark/60">Empanadas</button>
+      </div>
+
+      <div class="mt-4 space-y-2.5">
+        <div class="lift flex items-center gap-3 rounded-2xl border-2 border-bark/12 bg-cream p-2.5">
+          <div class="blob h-16 w-16 shrink-0 overflow-hidden"><img src="../../frontend/assets/img/platos/milanesa_napolitana_con_fritas.avif" class="h-full w-full object-cover" /></div>
+          <div class="min-w-0 flex-1">
+            <div class="font-display text-[14px] font-bold leading-tight">Milanesa napolitana con papas fritas</div>
+            <div class="truncate text-[11px] text-bark/50">quedan 24 porciones</div>
+          </div>
+          <div class="shrink-0 text-right">
+            <div class="text-[14px] font-bold">$11.500</div>
+            <button class="mt-1 blob border-2 border-bark/20 px-2.5 py-0.5 text-[12px]">+</button>
+          </div>
+        </div>
+        <div class="lift flex items-center gap-3 rounded-2xl border-2 border-bark/12 bg-cream p-2.5">
+          <div class="blob h-16 w-16 shrink-0 overflow-hidden"><img src="../../frontend/assets/img/platos/guiso.jpg" class="h-full w-full object-cover" /></div>
+          <div class="min-w-0 flex-1">
+            <div class="font-display text-[14px] font-bold leading-tight">Guiso de lentejas</div>
+            <div class="truncate text-[11px] text-bark/50">quedan 18 porciones</div>
+          </div>
+          <div class="shrink-0 text-right">
+            <div class="text-[14px] font-bold">$9.200</div>
+            <button class="mt-1 blob border-2 border-bark/20 px-2.5 py-0.5 text-[12px]">+</button>
+          </div>
+        </div>
+        <div class="lift flex items-center gap-3 rounded-2xl border-2 border-bark/12 bg-cream p-2.5">
+          <div class="blob h-16 w-16 shrink-0 overflow-hidden"><img src="../../frontend/assets/img/platos/arroz_con_pollo.jpg" class="h-full w-full object-cover" /></div>
+          <div class="min-w-0 flex-1">
+            <div class="font-display text-[14px] font-bold leading-tight">Arroz con pollo</div>
+            <div class="truncate text-[11px] text-bark/50">quedan 15 porciones</div>
+          </div>
+          <div class="shrink-0 text-right">
+            <div class="text-[14px] font-bold">$10.300</div>
+            <button class="mt-1 blob border-2 border-bark/20 px-2.5 py-0.5 text-[12px]">+</button>
+          </div>
+        </div>
+        <div class="lift flex items-center gap-3 rounded-2xl border-2 border-bark/12 bg-cream p-2.5">
+          <div class="blob h-16 w-16 shrink-0 overflow-hidden"><img src="../../frontend/assets/img/platos/pasta_ravioles.jpg" class="h-full w-full object-cover" /></div>
+          <div class="min-w-0 flex-1">
+            <div class="font-display text-[14px] font-bold leading-tight">Ravioles con salsa</div>
+            <div class="truncate text-[11px] text-bark/50">quedan 20 porciones</div>
+          </div>
+          <div class="shrink-0 text-right">
+            <div class="text-[14px] font-bold">$9.800</div>
+            <button class="mt-1 blob border-2 border-bark/20 px-2.5 py-0.5 text-[12px]">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROMOS: bajan de prioridad, van después del menú -->
+      <div class="mt-4 grid grid-cols-2 gap-2.5">
+        <div class="lift min-w-0 rounded-2xl border-2 border-bark/12 bg-cream p-2.5">
+          <div class="font-hand text-[12px] text-mustard">promo de la semana</div>
+          <div class="mt-0.5 font-display text-[13px] font-bold leading-tight">Sándwich de milanesa</div>
+          <div class="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[11px]"><span class="text-bark/40 line-through">$8.500</span><span class="font-bold text-brick">$7.200</span></div>
+        </div>
+        <div class="lift min-w-0 rounded-2xl border-2 border-bark/12 bg-cream p-2.5">
+          <div class="font-hand text-[12px] text-mustard">por docena</div>
+          <div class="mt-0.5 font-display text-[13px] font-bold leading-tight">Empanadas de carne</div>
+          <div class="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[11px]"><span class="text-bark/40 line-through">$9.600</span><span class="font-bold text-brick">$8.400</span></div>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-2xl border-2 border-forest/25 bg-forest/8 p-3.5">
+        <div class="flex items-center justify-between text-[12px]">
+          <span class="text-bark/55">llevamos tu vianda a</span>
+          <a href="#" class="font-hand text-[14px] text-brick">cambiar</a>
+        </div>
+        <div class="mt-1 font-display text-[15px] font-bold">Oficina · Av. Boedo 1240</div>
+      </div>
+    </div>
+
+    <!-- NAV MÓVIL: un toque más bajo que la versión actual -->
+    <nav class="fixed inset-x-0 bottom-0 z-40 mx-auto grid max-w-[420px] grid-cols-5 gap-1 rounded-t-[24px] border-2 border-bark/15 bg-cream px-2 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2.5 text-[10px] font-semibold text-bark/50 shadow-[0_-10px_28px_-10px_#3b2e2235]">
+      <a class="flex flex-col items-center gap-1" href="#"><span class="blob grid h-9 w-9 place-items-center bg-forest text-base text-cream">🏠</span><span class="text-forest">Inicio</span></a>
+      <a class="flex flex-col items-center gap-1" href="#"><span class="blob grid h-9 w-9 place-items-center bg-bark/8 text-base">🍲</span><span>Olla</span></a>
+      <a class="flex flex-col items-center gap-1" href="#"><span class="blob grid h-9 w-9 place-items-center bg-bark/8 text-base">🧺</span><span>Vianda</span></a>
+      <a class="flex flex-col items-center gap-1" href="#"><span class="blob grid h-9 w-9 place-items-center bg-bark/8 text-base">🧾</span><span>Pedidos</span></a>
+      <a class="flex flex-col items-center gap-1" href="#"><span class="blob grid h-9 w-9 place-items-center bg-bark/8 text-base">👤</span><span>Cuenta</span></a>
+    </nav>
+  </div>
+</div>
+
+</body>
+</html>
