@@ -142,3 +142,28 @@ class SettingValueType(str, Enum):
     STRING = "string"
     INT = "int"
     BOOL = "bool"
+
+
+class PromoTieBreaker(str, Enum):
+    """Valores de la clave `promo.tie_breaker` (§6.11). No estaba en el catálogo
+    de §7; se agrega igual que `VehicleType`."""
+
+    LOWEST_PRICE = "lowest_price"
+    PRIORITY = "priority"
+
+
+class SettingKey(str, Enum):
+    """Las únicas claves que existen en `system_settings` (§6.11). Una clave
+    fuera de esta lista es un error de tipeo, no una configuración nueva."""
+
+    SHIFT_DEFAULT = "shift.default"
+    TIMEZONE = "timezone"
+    COVERAGE_MODE = "coverage.mode"
+    COVERAGE_ORIGIN = "coverage.origin"
+    SHIPPING_MODE = "shipping.mode"
+    SHIPPING_FLAT_AMOUNT = "shipping.flat_amount"
+    SHIPPING_TIERS = "shipping.tiers"
+    PAYMENT_TRANSFER = "payment.transfer"
+    STOCK_RESERVATION_TTL_MIN = "stock.reservation_ttl_min"
+    PROMO_TIE_BREAKER = "promo.tie_breaker"
+    ORDERS_CODE_PREFIX = "orders.code_prefix"

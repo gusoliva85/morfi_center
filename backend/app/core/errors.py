@@ -32,6 +32,24 @@ class ConflictError(DomainError):
     code = "CONFLICT"
 
 
+class DomainValidationError(DomainError):
+    """Un valor que no cumple las reglas del negocio (no solo el formato del
+    request). Mismo código y forma de `details` que el 422 de Pydantic (§20.1),
+    así el front maneja un único formato de error de validación."""
+
+    status_code = 422
+    code = "VALIDATION_ERROR"
+
+
+class SettingCorruptError(DomainError):
+    """Una configuración guardada en la base ya no tiene la forma esperada
+    (alguien la tocó a mano). Se falla en vez de asumir un valor: un horario o
+    unos datos de transferencia equivocados salen caros."""
+
+    status_code = 500
+    code = "SETTING_CORRUPT"
+
+
 class OutOfStockError(DomainError):
     status_code = 409
     code = "OUT_OF_STOCK"

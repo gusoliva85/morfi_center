@@ -513,9 +513,18 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   3. **`get_typed()` devuelve la fila completa**, no solo el valor — la usará `T-2.1.3` para exponer el `value_type` de cada setting en `GET /settings`, sin que la API tenga que adivinarlo por su cuenta.
   _Prueba:_ set/get de una clave JSON compleja (tiers de envío) ida y vuelta. **Verificado con 17 tests**: los 5 tipos de valor (json/string/int/bool, incluido el caso booleano-vs-entero de arriba) infieren el `value_type` correcto; actualizar una clave existente no duplica la fila; `set` sin `actor` dispara `updated_by=NULL` (lo necesita el seed, `T-2.1.4`, que escribe los defaults sin que ningún admin lo pida); la `description` se conserva si no se manda una nueva; y el valor queda en la base como JSON de verdad (`'{"lat": -34.63, "lng": -58.41}'`), no como un string de Python con comillas simples. Migración probada `upgrade`/`downgrade`/`upgrade`, y agregada al test genérico que compara el esquema migrado contra los modelos (que de paso detectó que `audit_log`, de `T-1.7.2`, nunca se había sumado a esa lista). _Depende de:_ T-0.3.2
 
-- [ ] **T-2.1.2 · [Lógica] `SettingsService` con claves conocidas y defaults**
+- [x] **T-2.1.2 · [Lógica] `SettingsService` con claves conocidas y defaults**
   Enum/constantes de claves (`SHIFT_DEFAULT`, `TIMEZONE`, `COVERAGE_MODE`, ...). `get_shift_default()`, `get_payment_transfer()`, etc., con defaults de `02_Documento_Tecnico.md §6.11`. Validación de forma por clave.
-  _Prueba:_ tests: leer una clave sin valor devuelve el default; setear un valor con forma inválida → error. _Depende de:_ T-2.1.1
+  **Decisiones:**
+  1. **Solo existen las 11 claves de §6.11** (`SettingKey`). Guardar una clave inventada da 404 — un error de tipeo no crea una configuración nueva en silencio.
+  2. **Cada clave tiene su "molde" (Pydantic, estricto)** en `schemas/settings.py`: `"40"` no es un `40`, `true` no es un `1`, y los objetos rechazan campos de más. Los errores salen con el mismo formato que el 422 del resto de la API (`code: VALIDATION_ERROR`, `details.fields`) y en español.
+  3. **Se guarda la forma canónica** (lo validado, no lo que llegó): sin espacios sobrantes, `weekdays` ordenados.
+  4. **Reglas de negocio dentro de los moldes:** el turno cierra después de abrir; la ventana de cancelación no puede ser más larga que el turno; `weekdays` va de 1 (lunes) a 7 (domingo), sin repetir ni vacío; los rangos de envío van de menor a mayor distancia sin repetir (**adelanta la validación de `T-8.1.2`**, que solo tendrá que exponerla); el CBU, si se carga, tiene 22 dígitos; el prefijo de pedido son 1-6 letras mayúsculas/números.
+  5. **Leer una clave sin guardar devuelve su default, pero no lo escribe** en la base (eso lo hace el seed, `T-2.1.4`). Los datos de transferencia arrancan **vacíos** (salvo el alias `MORFI.CENTER`): no se le muestra a un cliente un CBU inventado — **el admin tiene que cargarlos antes de abrir al público**.
+  6. **Dato corrupto en la base → error 500 `SETTING_CORRUPT`**, no un default silencioso: si alguien edita la base a mano, un horario o una cuenta equivocados salen más caros que un error claro.
+  7. `SPECS` (clave + molde + default + descripción en español) es la fuente única: `T-2.1.3` la usa para el `GET`, `T-2.1.4` para el seed.
+  _Prueba:_ **Verificado con 89 tests** (suite completa: 532 pasan): los 11 defaults pasan su propio molde; leer sin guardar da el default tipado; guardar y leer de vuelta; guardar inválido (tipo equivocado, fuera de rango, campo de más, horario incoherente, tiers desordenados, CBU corto, zona horaria inexistente, etc.) → error y **no queda nada escrito**; dato corrupto o JSON roto en la base → `SETTING_CORRUPT`. _Depende de:_ T-2.1.1
+  _Pendiente para `T-2.2.2`:_ hoy `core/timezone.py` lee la zona de `APP_TIMEZONE` (variable de entorno) y existe también la clave `timezone` en la base; ahí se decide cuál manda.
 
 - [ ] **T-2.1.3 · [Backend] Endpoints de configuración (admin)**
   `GET /api/v1/settings` (todas), `PUT /api/v1/settings/{key}` con validación y `audit_log`.
