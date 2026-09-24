@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.enums import (
     CoverageMode,
     PromoTieBreaker,
@@ -82,7 +83,7 @@ SPECS: dict[SettingKey, SettingSpec] = {
         _spec(
             SettingKey.TIMEZONE,
             Timezone,
-            "America/Argentina/Buenos_Aires",
+            settings.app_timezone,  # APP_TIMEZONE es el valor inicial; el admin lo puede cambiar
             "Zona horaria en la que se interpretan los horarios del turno.",
         ),
         _spec(

@@ -524,7 +524,7 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   6. **Dato corrupto en la base → error 500 `SETTING_CORRUPT`**, no un default silencioso: si alguien edita la base a mano, un horario o una cuenta equivocados salen más caros que un error claro.
   7. `SPECS` (clave + molde + default + descripción en español) es la fuente única: `T-2.1.3` la usa para el `GET`, `T-2.1.4` para el seed.
   _Prueba:_ **Verificado con 89 tests** (suite completa: 532 pasan): los 11 defaults pasan su propio molde; leer sin guardar da el default tipado; guardar y leer de vuelta; guardar inválido (tipo equivocado, fuera de rango, campo de más, horario incoherente, tiers desordenados, CBU corto, zona horaria inexistente, etc.) → error y **no queda nada escrito**; dato corrupto o JSON roto en la base → `SETTING_CORRUPT`. _Depende de:_ T-2.1.1
-  _Pendiente para `T-2.2.2`:_ hoy `core/timezone.py` lee la zona de `APP_TIMEZONE` (variable de entorno) y existe también la clave `timezone` en la base; ahí se decide cuál manda.
+  _Resuelto en `T-2.2.2`:_ la zona horaria que manda es la clave `timezone` de la base; `APP_TIMEZONE` queda como valor inicial.
 
 - [x] **T-2.1.3 · [Backend] Endpoints de configuración (admin)**
   `GET /api/v1/settings` (todas), `PUT /api/v1/settings/{key}` con validación y `audit_log`.
@@ -559,9 +559,15 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   6. Se agregó el enum `ServiceType` (`BREAKFAST/LUNCH/DINNER`), que faltaba en el catálogo de §7.
   _Prueba:_ **Verificado con 14 tests de repositorio** (suite completa: 579 pasan): crear y recuperar por fecha/tipo; copia la plantilla (con y sin ETAs); por defecto `LUNCH` + `SCHEDULED`; distingue fecha y tipo; `get_current`; dos turnos iguales → `IntegrityError`; `set_status` persiste; fecha guardada como ISO; el `CHECK` de la base rechaza estado inválido y ventana negativa. Migración probada `upgrade`/`downgrade`/`upgrade` sobre la base local y sumada al test que compara esquema vs. modelos. _Depende de:_ T-0.3.2
 
-- [ ] **T-2.2.2 · [Lógica] `ShiftService` — resolución de instantes y estado**
+- [x] **T-2.2.2 · [Lógica] `ShiftService` — resolución de instantes y estado**
   `resolve_window(shift)` → `(open_dt_utc, close_dt_utc, cancel_deadline_utc)` con `core/timezone`. `current_status(shift, now)` deriva `SCHEDULED/OPEN/CLOSED`. `is_ordering_open(now)`.
-  _Prueba:_ tests con distintos "now": antes de apertura, dentro, después del cierre. _Depende de:_ T-2.2.1, T-0.2.5
+  **Decisiones:**
+  1. **Manda la configuración `timezone` de la base**, no la variable de entorno: el documento técnico se contradecía (§9.9/§6.11 decían la base, §17 decía `APP_TIMEZONE`). Así el admin cambia la zona sin tocar el servidor. `APP_TIMEZONE` pasó a ser el **valor inicial** de esa configuración (mientras nadie la guarde) y el respaldo de los helpers de `core/timezone.py`, que ahora aceptan una `tz` opcional. Documento técnico actualizado.
+  2. **Las cuentas son funciones puras** (`resolve_window`, `current_status`, `is_ordering_open` reciben `now` y la zona; no tocan la base). `ShiftService` es una capa fina que les pasa la zona configurada y usa la hora actual si no se le da `now`.
+  3. **Bordes:** abre en la hora de apertura (inclusive) y cierra en la de cierre (**exclusive**): a las 12:00 en punto ya está cerrado.
+  4. **`current_status` deriva solo de la hora** (como pide §9.9), pero **`is_ordering_open` además respeta el estado guardado**: si el admin ya pasó el turno a `IN_PRODUCTION`/`DISPATCHING`/`FINISHED`, no se aceptan pedidos aunque el reloj diga que sigue abierto.
+  5. Zonas con horario de verano funcionan (la misma hora de pared cae en instantes distintos según la fecha del turno).
+  _Prueba:_ **Verificado con 31 tests nuevos** (suite completa: 610 pasan): conversión a UTC de apertura/cierre/límite de cancelación; ventana de cancelación cero; otra zona (Bogotá) y horario de verano (Madrid, invierno vs. verano); estado un segundo antes/en punto/después de abrir y de cerrar, el día anterior y el siguiente; mismo `now` → mismo estado; `now` expresado en otra zona; `is_ordering_open` dentro/fuera de la ventana y con estados guardados posteriores al cierre; la zona configurada por el admin gobierna los turnos; sin `now` usa el reloj. _Depende de:_ T-2.2.1, T-0.2.5
 
 - [ ] **T-2.2.3 · [Lógica] `ShiftService.ensure_today_shift`**
   Si no existe el turno del día (según `SHIFT_DEFAULT` y `weekdays`), lo crea. Idempotente.

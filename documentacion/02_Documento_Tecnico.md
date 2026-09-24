@@ -1637,8 +1637,8 @@ Principios que lo hacen posible: capas de una sola dirección, repos como única
 ## 26. Zona horaria y manejo de fechas
 
 - **Almacenamiento**: todo `datetime` absoluto se guarda en **UTC** ISO-8601 (`...Z`).
-- **Operación**: `APP_TIMEZONE` (`America/Argentina/Buenos_Aires`) es la zona del negocio.
-- **Turnos**: `open_time`/`close_time` se guardan como **hora de pared local** (`"12:00"`); para una `service_date` dada se resuelven a un instante absoluto con `APP_TIMEZONE` y se comparan en UTC.
+- **Operación**: la zona del negocio es la configuración `timezone` de `system_settings` (§6.11), que el admin puede cambiar sin tocar el servidor. `APP_TIMEZONE` (`America/Argentina/Buenos_Aires`) es solo su **valor inicial** (el default mientras nadie la guardó) y el respaldo de los helpers de `core/timezone.py` cuando no se les pasa zona.
+- **Turnos**: `open_time`/`close_time` se guardan como **hora de pared local** (`"12:00"`); para una `service_date` dada se resuelven a un instante absoluto con la zona `timezone` de la configuración y se comparan en UTC.
 - **Countdown**: el front usa el `now` que devuelve `GET /shift/current` para no depender del reloj del dispositivo.
 - **Ventana de cancelación**: `cancel_deadline = close_datetime_utc - cancel_window_min`.
 - Librería: `zoneinfo` (stdlib) + paquete `tzdata` (verificado: en Windows `zoneinfo` no trae la base de datos IANA integrada y `ZoneInfo("America/Argentina/Buenos_Aires")` falla con `ZoneInfoNotFoundError` sin `tzdata` instalado; en Linux suele venir del sistema, pero `tzdata` lo garantiza en cualquier entorno de desarrollo o despliegue). Helpers en `core/timezone.py` (`now_utc()`, `to_local()`, `resolve_shift_instant(date, "HH:MM")`).
