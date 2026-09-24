@@ -81,6 +81,10 @@ def test_setting_value_type_matches_system_settings_check():
     assert [t.value for t in enums.SettingValueType] == ["json", "string", "int", "bool"]
 
 
+def test_service_type_matches_shifts_check():
+    assert [t.value for t in enums.ServiceType] == ["BREAKFAST", "LUNCH", "DINNER"]
+
+
 def test_all_enums_are_str_enum():
     enum_classes = [
         enums.Role,
@@ -91,6 +95,7 @@ def test_all_enums_are_str_enum():
         enums.PromotionType,
         enums.ReservationStatus,
         enums.ShiftStatus,
+        enums.ServiceType,
         enums.DriverStatus,
         enums.ZoneType,
         enums.ShippingMode,
@@ -102,7 +107,7 @@ def test_all_enums_are_str_enum():
         enums.StopStatus,
         enums.SettingValueType,
     ]
-    assert len(enum_classes) == 18
+    assert len(enum_classes) == 19
     for enum_cls in enum_classes:
         for member in enum_cls:
             assert isinstance(member, str)

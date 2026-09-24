@@ -60,6 +60,15 @@ class ShiftStatus(str, Enum):
     FINISHED = "FINISHED"
 
 
+class ServiceType(str, Enum):
+    """Tipo de servicio de un turno (`shifts.service_type`, §6.4). Hoy solo se
+    opera LUNCH; los otros dos existen para el día que haya más turnos."""
+
+    BREAKFAST = "BREAKFAST"
+    LUNCH = "LUNCH"
+    DINNER = "DINNER"
+
+
 class VehicleType(str, Enum):
     """Transporte del repartidor. Estos valores ya existían como `CHECK` en
     `user_profiles` (§6.1) pero no estaban en el catálogo de enums de §7, igual

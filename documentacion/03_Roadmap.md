@@ -548,9 +548,16 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 2.2 · Turnos
 
-- [ ] **T-2.2.1 · [Backend] Modelo `Shift` + `ShiftRepository`**
+- [x] **T-2.2.1 · [Backend] Modelo `Shift` + `ShiftRepository`**
   Tabla `shifts` (§6.4). Repo: `get_current()`, `get_by_date_type`, `create_from_default`, `set_status`.
-  _Prueba:_ crear un turno y recuperarlo por fecha/tipo. _Depende de:_ T-0.3.2
+  **Decisiones:**
+  1. **Los horarios se guardan como texto `HH:MM` de hora local**, no como instantes; `service_date` como fecha local (`'YYYY-MM-DD'`). Pasarlos a UTC es de `ShiftService` (`T-2.2.2`).
+  2. **`status` guarda solo lo que hay que recordar**: que el turno esté por abrir/abierto/cerrado se deriva de la hora (§9.9, `T-2.2.2`) y no se persiste. El enum conserva `SCHEDULED/OPEN/CLOSED` por el `CHECK` de §6.4, pero lo que cambia por una acción real es `IN_PRODUCTION/DISPATCHING/FINISHED`.
+  3. **La base garantiza un solo turno por fecha y tipo** (`UNIQUE(service_date, service_type)`); también rechaza estados desconocidos, tipos desconocidos y ventana de cancelación negativa. `create_from_default` no captura el `IntegrityError` de una carrera: lo resuelve `ensure_today_shift` (`T-2.2.3`).
+  4. **`create_from_default` copia la plantilla, no la referencia**: cambiar `shift.default` después no altera turnos ya creados. No mira `weekdays` (decidir si ese día se opera es de `T-2.2.3`).
+  5. **`get_current(today)` recibe la fecha local ya calculada**: el repositorio no sabe de zonas horarias. Hoy equivale a buscar por fecha; queda separado porque con más turnos por día "el actual" dejará de ser solo eso. `set_status` no valida transiciones (eso es de `T-2.2.4`).
+  6. Se agregó el enum `ServiceType` (`BREAKFAST/LUNCH/DINNER`), que faltaba en el catálogo de §7.
+  _Prueba:_ **Verificado con 14 tests de repositorio** (suite completa: 579 pasan): crear y recuperar por fecha/tipo; copia la plantilla (con y sin ETAs); por defecto `LUNCH` + `SCHEDULED`; distingue fecha y tipo; `get_current`; dos turnos iguales → `IntegrityError`; `set_status` persiste; fecha guardada como ISO; el `CHECK` de la base rechaza estado inválido y ventana negativa. Migración probada `upgrade`/`downgrade`/`upgrade` sobre la base local y sumada al test que compara esquema vs. modelos. _Depende de:_ T-0.3.2
 
 - [ ] **T-2.2.2 · [Lógica] `ShiftService` — resolución de instantes y estado**
   `resolve_window(shift)` → `(open_dt_utc, close_dt_utc, cancel_deadline_utc)` con `core/timezone`. `current_status(shift, now)` deriva `SCHEDULED/OPEN/CLOSED`. `is_ordering_open(now)`.

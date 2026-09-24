@@ -19,6 +19,7 @@ EXPECTED_TABLES = {
     "revoked_tokens",
     "audit_log",
     "system_settings",
+    "shifts",
 }
 
 
@@ -87,3 +88,5 @@ def test_check_constraints_survive_the_migration(migrated_db):
     assert "CHECK (balance >= 0)" in ddl
     assert "vehicle_type IN ('moto','bici','auto','a_pie')" in ddl
     assert "CHECK (value_type IN ('json', 'string', 'int', 'bool'))" in ddl
+    assert "CHECK (service_type IN ('BREAKFAST', 'LUNCH', 'DINNER'))" in ddl
+    assert "UNIQUE (service_date, service_type)" in ddl
