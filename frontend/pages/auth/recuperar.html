@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recuperar contraseña · Morfi Center</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Caveat:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { display:['Bricolage Grotesque','system-ui','sans-serif'], hand:['Caveat','cursive'], sans:['Inter','system-ui','sans-serif'] },
+    colors: { kraft:'#E9DFC9', cream:'#F6EFDD', bark:'#3B2E22', forest:'#2F5D3A', mustard:'#D69A2D', brick:'#B0472F' },
+  }}};
+</script>
+<link rel="stylesheet" href="../../assets/css/base.css" />
+</head>
+<body class="bg-kraft font-sans text-bark antialiased">
+
+<!-- Misma pantalla enfocada que login.html/registro.html. Dos pasos en un
+     solo archivo, alternados por JS según haya o no ?token= en la URL
+     (T-1.9.1: paso 1 pide el link, paso 2 -con token- define la contraseña). -->
+<div class="mx-auto flex min-h-screen max-w-[480px] flex-col justify-center px-3 py-8 sm:px-4">
+
+  <div class="paper relative overflow-hidden rounded-[24px] border border-bark/10 sm:rounded-[34px]">
+    <div class="blob pointer-events-none absolute -right-20 -top-24 h-64 w-64 bg-forest/10"></div>
+    <div class="blob2 pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 bg-mustard/15"></div>
+
+    <div class="relative px-5 py-7 sm:px-8 sm:py-9">
+
+      <a class="flex items-center gap-3" href="/index.html">
+        <div class="blob grid h-11 w-11 place-items-center bg-forest font-display text-lg font-bold text-cream">M</div>
+        <div>
+          <div class="font-display text-xl font-bold leading-none">Morfi Center</div>
+          <div class="font-hand text-[15px] text-brick">cocina de olla, todos los días</div>
+        </div>
+      </a>
+
+      <!-- ===== PASO 1: pedir el link (sin ?token en la URL) ===== -->
+      <div class="hidden" data-step="request">
+        <h1 class="mt-7 font-display text-[28px] font-bold leading-tight sm:text-[32px]">
+          Recuperá tu contraseña
+        </h1>
+        <p class="mt-2 text-[14px] leading-relaxed text-bark/60">
+          Ingresá tu email y te mandamos un link para elegir una nueva.
+        </p>
+
+        <div
+          class="mt-5 hidden rounded-xl border-2 border-brick/30 bg-brick/8 px-4 py-3 text-[13px] leading-relaxed text-brick"
+          data-request-error
+          role="alert"
+          aria-live="polite"
+        ></div>
+
+        <form class="mt-6 grid gap-4" data-request-form novalidate>
+          <div>
+            <label class="block text-[13px] font-semibold" for="email">Email</label>
+            <input
+              class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[14px] outline-none transition placeholder:text-bark/35 focus:border-forest"
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="tumail@ejemplo.com"
+              required
+            />
+            <p class="mt-1 hidden text-[12px] text-brick" data-field-error="email"></p>
+          </div>
+
+          <button
+            class="mt-1 rounded-2xl bg-brick px-7 py-3 text-[13px] font-semibold text-cream transition hover:bg-bark disabled:cursor-not-allowed disabled:opacity-60"
+            type="submit"
+            data-request-submit
+          >
+            Enviar link
+          </button>
+        </form>
+
+        <!-- Mensaje neutro: el backend responde siempre lo mismo, exista o no
+             el email, para no delatar qué direcciones están registradas. -->
+        <div class="hidden" data-request-sent>
+          <div class="mt-5 rounded-xl border-2 border-forest/25 bg-forest/8 px-4 py-3.5 text-[13px] leading-relaxed text-bark/80">
+            Si ese email tiene una cuenta, te enviamos un link para cambiar la contraseña. Revisá tu correo (y la carpeta de spam).
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PASO 2: elegir la contraseña nueva (con ?token=...) ===== -->
+      <div class="hidden" data-step="reset">
+        <h1 class="mt-7 font-display text-[28px] font-bold leading-tight sm:text-[32px]">
+          Elegí tu nueva contraseña
+        </h1>
+        <p class="mt-2 text-[14px] leading-relaxed text-bark/60">
+          Ya casi. Definí una contraseña nueva para tu cuenta.
+        </p>
+
+        <div
+          class="mt-5 hidden rounded-xl border-2 border-brick/30 bg-brick/8 px-4 py-3 text-[13px] leading-relaxed text-brick"
+          data-reset-error
+          role="alert"
+          aria-live="polite"
+        ></div>
+
+        <form class="mt-6 grid gap-4" data-reset-form novalidate>
+          <div>
+            <label class="block text-[13px] font-semibold" for="password">Contraseña nueva</label>
+            <input
+              class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[14px] outline-none transition placeholder:text-bark/35 focus:border-forest"
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Mínimo 8 caracteres, con letra y número"
+              required
+            />
+            <p class="mt-1 hidden text-[12px] text-brick" data-field-error="password"></p>
+          </div>
+
+          <div>
+            <label class="block text-[13px] font-semibold" for="password_confirm">Repetí la contraseña</label>
+            <input
+              class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-cream px-4 py-3 text-[14px] outline-none transition placeholder:text-bark/35 focus:border-forest"
+              id="password_confirm"
+              name="password_confirm"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Repetí tu contraseña"
+              required
+            />
+            <p class="mt-1 hidden text-[12px] text-brick" data-field-error="password_confirm"></p>
+          </div>
+
+          <button
+            class="mt-1 rounded-2xl bg-brick px-7 py-3 text-[13px] font-semibold text-cream transition hover:bg-bark disabled:cursor-not-allowed disabled:opacity-60"
+            type="submit"
+            data-reset-submit
+          >
+            Cambiar contraseña
+          </button>
+        </form>
+
+        <div class="hidden" data-reset-done>
+          <div class="mt-5 rounded-xl border-2 border-forest/25 bg-forest/8 px-4 py-3.5 text-[13px] leading-relaxed text-bark/80">
+            Tu contraseña se cambió. Ya podés iniciar sesión.
+          </div>
+          <a
+            class="mt-4 block rounded-2xl bg-brick px-7 py-3 text-center text-[13px] font-semibold text-cream transition hover:bg-bark"
+            href="login.html"
+          >
+            Iniciar sesión
+          </a>
+        </div>
+      </div>
+
+      <p class="mt-7 border-t border-bark/10 pt-5 text-center text-[13px] text-bark/60">
+        ¿Te acordaste?
+        <a class="font-semibold text-forest underline decoration-forest/40 underline-offset-2" href="login.html">
+          Iniciá sesión
+        </a>
+      </p>
+
+    </div>
+  </div>
+
+  <a class="mt-5 text-center text-[13px] text-bark/50 hover:text-bark" href="/index.html">
+    ← Volver a la olla de hoy
+  </a>
+
+</div>
+
+<script type="module" src="../../assets/js/pages/recuperar.js"></script>
+</body>
+</html>

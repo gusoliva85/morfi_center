@@ -45,6 +45,18 @@ export async function register(payload) {
   return currentUser;
 }
 
+/** Pide el link de recuperación. El backend responde siempre lo mismo, exista
+ * o no el email — no hay nada que interpretar acá aparte del mensaje. */
+export function requestPasswordReset(email) {
+  return api.post("/auth/password/forgot", { email }, { auth: false });
+}
+
+/** Cambia la contraseña con el token del link. No deja logueado (el backend
+ * no emite tokens acá): la persona entra después con su contraseña nueva. */
+export function resetPassword(token, password) {
+  return api.post("/auth/password/reset", { token, password }, { auth: false });
+}
+
 export async function logout() {
   try {
     await api.post("/auth/logout");

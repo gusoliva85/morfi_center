@@ -2,25 +2,7 @@ import "../config.js"; // primero: api.js lee window.__MC_API__ al cargarse
 import { ApiError } from "../api.js";
 import { register } from "../auth.js";
 import { $ } from "../ui.js";
-
-// Mismas reglas que el backend (app/services/user_service.py y
-// app/schemas/auth.py), para que el error aparezca al tipear y no recién
-// después de un viaje al servidor. La validación real sigue siendo la del
-// backend: esto es solo para que la experiencia no se sienta a destiempo.
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-function isValidName(value) {
-  return Boolean(value && value.trim());
-}
-
-function isValidEmail(value) {
-  return EMAIL_RE.test(value.trim());
-}
-
-function isValidPassword(value) {
-  if (value.length < 8 || value.length > 72) return false;
-  return /[a-zA-Z]/.test(value) && /[0-9]/.test(value);
-}
+import { isValidEmail, isValidName, isValidPassword } from "../validators.js";
 
 const form = $("[data-register-form]");
 const generalError = $("[data-error]");
