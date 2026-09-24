@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Usuarios · Panel de administración · Morfi Center</title>
+<!-- Ícono real (antes no había ninguno: el navegador armaba uno generico
+     con una sola letra al "agregar a pantalla de inicio"). Rutas absolutas
+     porque son las mismas sin importar la profundidad de la página. -->
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/icons/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/img/icons/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/icons/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="theme-color" content="#2F5D3A" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Caveat:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { display:['Bricolage Grotesque','system-ui','sans-serif'], hand:['Caveat','cursive'], sans:['Inter','system-ui','sans-serif'] },
+    colors: { kraft:'#E9DFC9', cream:'#F6EFDD', bark:'#3B2E22', forest:'#2F5D3A', mustard:'#D69A2D', brick:'#B0472F' },
+  }}};
+</script>
+<link rel="stylesheet" href="../../assets/css/base.css" />
+</head>
+<body class="bg-kraft font-sans text-bark antialiased">
+
+<!-- Panel de admin: reutiliza el mismo sistema visual (paper/blob/paleta),
+     pero sin el header de cliente (sin carrito, sin countdown, sin nav de
+     tienda — nada de eso aplica acá) y sin bottom-nav (esta pantalla es de
+     escritorio, §16.2: "Panel admin: tablas densas", no la app del cliente). -->
+<div class="mx-auto max-w-[1100px] px-3 py-4 sm:px-4 sm:py-6 lg:py-10">
+
+  <div class="paper relative overflow-hidden rounded-[24px] border border-bark/10 sm:rounded-[34px]">
+    <div class="blob pointer-events-none absolute -right-24 -top-24 h-72 w-72 bg-forest/10"></div>
+    <div class="blob2 pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 bg-mustard/15"></div>
+
+    <header class="relative flex items-center justify-between gap-3 px-4 pt-5 sm:px-5 sm:pt-6 lg:px-10 lg:pt-8">
+      <a class="flex items-center gap-3" href="/index.html">
+        <div class="blob grid h-11 w-11 place-items-center bg-forest font-display text-lg font-bold text-cream">M</div>
+        <div>
+          <div class="font-display text-xl font-bold leading-none">Morfi Center</div>
+          <div class="font-hand text-[15px] text-brick">panel de administración</div>
+        </div>
+      </a>
+      <div class="flex items-center gap-3">
+        <span class="hidden text-[13px] font-medium text-bark/70 sm:inline" data-session-name></span>
+        <button
+          class="text-[13px] font-semibold text-brick underline decoration-brick/40 underline-offset-2"
+          type="button"
+          data-session-logout
+        >
+          Cerrar sesión
+        </button>
+        <!-- Un admin llega a esta pantalla ya logueado (requireRole la trae
+             directo); el link de "Ingresar" no debería poder mostrarse acá,
+             pero se deja el elemento porque renderSessionUI() lo espera. -->
+        <a class="hidden" href="/pages/auth/login.html" data-session-login>Ingresar</a>
+      </div>
+    </header>
+
+    <div class="relative px-4 py-6 sm:px-5 sm:py-8 lg:px-10">
+
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="font-display text-[24px] font-bold leading-none sm:text-[28px]">Usuarios</h1>
+          <p class="mt-1 text-[13px] text-bark/55">Clientes, administradores y repartidores.</p>
+        </div>
+        <button
+          class="rounded-2xl bg-forest px-5 py-2.5 text-[13px] font-semibold text-cream transition hover:bg-bark"
+          type="button"
+          data-toggle-create
+        >
+          + Nuevo usuario
+        </button>
+      </div>
+
+      <!-- Alta de ADMIN/DELIVERY: oculto hasta que se pida (T-1.7.1) -->
+      <section class="mt-5 hidden rounded-2xl border-2 border-bark/12 bg-cream p-5" data-create-panel>
+        <h2 class="font-display text-[16px] font-bold">Nuevo usuario</h2>
+        <p class="mt-1 text-[12px] text-bark/50">
+          Solo ADMIN o DELIVERY — los clientes se registran solos desde la app.
+        </p>
+
+        <div
+          class="mt-4 hidden rounded-xl border-2 border-brick/30 bg-brick/8 px-4 py-3 text-[13px] leading-relaxed text-brick"
+          data-create-error
+          role="alert"
+          aria-live="polite"
+        ></div>
+
+        <form class="mt-4 grid gap-4" data-create-form novalidate>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label class="block text-[13px] font-semibold" for="c_role">Rol</label>
+              <select
+                class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-kraft/40 px-4 py-3 text-[14px] outline-none focus:border-forest"
+                id="c_role"
+                name="role"
+              >
+                <option value="ADMIN">Administrador/a</option>
+                <option value="DELIVERY">Repartidor/a</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[13px] font-semibold" for="c_email">Email</label>
+              <input
+                class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-kraft/40 px-4 py-3 text-[14px] outline-none focus:border-forest"
+                id="c_email"
+                name="email"
+                type="email"
+                autocomplete="off"
+                placeholder="persona@morficenter.com"
+                required
+              />
+              <p class="mt-1 hidden text-[12px] text-brick" data-field-error="email"></p>
+            </div>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label class="block text-[13px] font-semibold" for="c_first_name">Nombre</label>
+              <input
+                class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-kraft/40 px-4 py-3 text-[14px] outline-none focus:border-forest"
+                id="c_first_name"
+                name="first_name"
+                type="text"
+                autocomplete="off"
+                required
+              />
+              <p class="mt-1 hidden text-[12px] text-brick" data-field-error="first_name"></p>
+            </div>
+            <div>
+              <label class="block text-[13px] font-semibold" for="c_last_name">Apellido</label>
+              <input
+                class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-kraft/40 px-4 py-3 text-[14px] outline-none focus:border-forest"
+                id="c_last_name"
+                name="last_name"
+                type="text"
+                autocomplete="off"
+                required
+              />
+              <p class="mt-1 hidden text-[12px] text-brick" data-field-error="last_name"></p>
+            </div>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label class="block text-[13px] font-semibold" for="c_phone">Teléfono <span class="font-normal text-bark/40">(opcional)</span></label>
+              <input
+                class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-kraft/40 px-4 py-3 text-[14px] outline-none focus:border-forest"
+                id="c_phone"
+                name="phone"
+                type="tel"
+                autocomplete="off"
+              />
+            </div>
+            <div>
+              <label class="block text-[13px] font-semibold" for="c_password">Contraseña</label>
+              <input
+                class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-kraft/40 px-4 py-3 text-[14px] outline-none focus:border-forest"
+                id="c_password"
+                name="password"
+                type="text"
+                autocomplete="off"
+                placeholder="Mínimo 8, con letra y número"
+                required
+              />
+              <p class="mt-1 hidden text-[12px] text-brick" data-field-error="password"></p>
+            </div>
+          </div>
+
+          <!-- Solo para DELIVERY (RF-DLV-01): el transporte es obligatorio,
+               la capacidad no. Se muestra/oculta según el rol elegido. -->
+          <div class="grid gap-3 sm:grid-cols-2" data-delivery-fields>
+            <div>
+              <label class="block text-[13px] font-semibold" for="c_vehicle_type">Transporte</label>
+              <select
+                class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-kraft/40 px-4 py-3 text-[14px] outline-none focus:border-forest"
+                id="c_vehicle_type"
+                name="vehicle_type"
+              >
+                <option value="moto">Moto</option>
+                <option value="bici">Bici</option>
+                <option value="auto">Auto</option>
+                <option value="a_pie">A pie</option>
+              </select>
+              <p class="mt-1 hidden text-[12px] text-brick" data-field-error="vehicle_type"></p>
+            </div>
+            <div>
+              <label class="block text-[13px] font-semibold" for="c_capacity">Capacidad <span class="font-normal text-bark/40">(opcional)</span></label>
+              <input
+                class="mt-1.5 w-full rounded-xl border-2 border-bark/15 bg-kraft/40 px-4 py-3 text-[14px] outline-none focus:border-forest"
+                id="c_capacity"
+                name="capacity"
+                type="number"
+                min="1"
+                placeholder="Pedidos simultáneos"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button
+              class="rounded-2xl bg-brick px-6 py-2.5 text-[13px] font-semibold text-cream transition hover:bg-bark disabled:cursor-not-allowed disabled:opacity-60"
+              type="submit"
+              data-create-submit
+            >
+              Crear usuario
+            </button>
+            <button
+              class="text-[13px] font-semibold text-bark/50 hover:text-bark"
+              type="button"
+              data-cancel-create
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Filtro por rol -->
+      <div class="mt-6 flex flex-wrap gap-2" data-role-filter>
+        <button class="rounded-full bg-bark px-3.5 py-1.5 text-[12px] font-medium text-cream" data-role-value="">Todos</button>
+        <button class="rounded-full border-2 border-bark/15 px-3.5 py-1.5 text-[12px] text-bark/60" data-role-value="CUSTOMER">Clientes</button>
+        <button class="rounded-full border-2 border-bark/15 px-3.5 py-1.5 text-[12px] text-bark/60" data-role-value="ADMIN">Admins</button>
+        <button class="rounded-full border-2 border-bark/15 px-3.5 py-1.5 text-[12px] text-bark/60" data-role-value="DELIVERY">Repartidores</button>
+      </div>
+
+      <div
+        class="mt-4 hidden rounded-xl border-2 border-brick/30 bg-brick/8 px-4 py-3 text-[13px] leading-relaxed text-brick"
+        data-list-error
+        role="alert"
+        aria-live="polite"
+      ></div>
+
+      <!-- Tabla densa (escritorio): overflow-x-auto es la única concesión a
+           mobile — no se rediseña como cards apiladas, esta pantalla es de
+           uso administrativo en escritorio (§16.2). -->
+      <div class="mt-4 overflow-x-auto rounded-2xl border-2 border-bark/12 bg-cream">
+        <table class="w-full min-w-[720px] text-left text-[13px]">
+          <thead>
+            <tr class="border-b-2 border-bark/10 text-[11px] uppercase tracking-wide text-bark/40">
+              <th class="px-4 py-3 font-semibold">Nombre</th>
+              <th class="px-4 py-3 font-semibold">Email</th>
+              <th class="px-4 py-3 font-semibold">Rol</th>
+              <th class="px-4 py-3 font-semibold">Estado</th>
+              <th class="px-4 py-3 font-semibold">Acciones</th>
+            </tr>
+          </thead>
+          <tbody data-user-rows>
+            <tr><td class="px-4 py-6 text-bark/40" colspan="5">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between text-[13px] text-bark/60">
+        <button class="font-semibold text-forest disabled:cursor-not-allowed disabled:text-bark/30" type="button" data-prev-page>← Anterior</button>
+        <span data-page-summary>—</span>
+        <button class="font-semibold text-forest disabled:cursor-not-allowed disabled:text-bark/30" type="button" data-next-page>Siguiente →</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="../../assets/js/pages/admin-usuarios.js"></script>
+</body>
+</html>

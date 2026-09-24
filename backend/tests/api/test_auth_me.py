@@ -87,6 +87,7 @@ async def test_me_never_exposes_the_password_hash(client, customer_token):
         "email",
         "phone",
         "role",
+        "status",
         "balance",
     }
 

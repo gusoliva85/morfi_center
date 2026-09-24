@@ -22,6 +22,14 @@ export function formatDate(isoString) {
   });
 }
 
+const ROLE_LABELS = { CUSTOMER: "Cliente", ADMIN: "Administrador/a", DELIVERY: "Repartidor/a" };
+
+/** "CUSTOMER" -> "Cliente". Un solo lugar para esta traducción: perfil.html y
+ * el panel de admin la necesitan igual, y así no pueden desalinearse. */
+export function roleLabel(role) {
+  return ROLE_LABELS[role] ?? role;
+}
+
 /** isoString: fecha/hora ISO-8601 en UTC (como la devuelve el backend) -> "12:00" */
 export function formatTime(isoString) {
   return new Date(isoString).toLocaleTimeString("es-AR", {

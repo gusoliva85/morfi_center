@@ -99,6 +99,19 @@ async def test_a_page_beyond_the_last_one_is_empty(client, admin_token):
     assert response.json()["items"] == []
 
 
+async def test_the_listing_includes_each_users_status(client, admin_token, make_user):
+    """Sin esto, el panel de admin no podría distinguir a quién ofrecerle
+    "Suspender" y a quién "Reactivar"."""
+    make_user(Role.CUSTOMER, email="activo@example.com", status=UserStatus.ACTIVE)
+    make_user(Role.CUSTOMER, email="suspendido@example.com", status=UserStatus.SUSPENDED)
+
+    response = await client.get(USERS, headers=auth(admin_token))
+
+    by_email = {u["email"]: u["status"] for u in response.json()["items"]}
+    assert by_email["activo@example.com"] == UserStatus.ACTIVE.value
+    assert by_email["suspendido@example.com"] == UserStatus.SUSPENDED.value
+
+
 async def test_the_listing_never_exposes_password_hashes(client, admin_token, make_user):
     make_user(Role.CUSTOMER, email="c1@example.com")
 

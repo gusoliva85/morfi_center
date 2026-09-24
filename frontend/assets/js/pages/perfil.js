@@ -1,11 +1,9 @@
 import "../config.js"; // primero: api.js lee window.__MC_API__ al cargarse
 import { api, ApiError } from "../api.js";
 import { logout, renderSessionUI, requireRole } from "../auth.js";
-import { formatMoney } from "../format.js";
+import { formatMoney, roleLabel } from "../format.js";
 import { $, injectPartials } from "../ui.js";
 import { isValidName } from "../validators.js";
-
-const ROLE_LABELS = { CUSTOMER: "Cliente", ADMIN: "Administrador/a", DELIVERY: "Repartidor/a" };
 
 await injectPartials();
 // Página exclusiva de sesión (cualquier rol logueado, RN-33 / T-1.11.4): sin
@@ -22,7 +20,7 @@ function fillForm(user) {
   form.last_name.value = user.last_name;
   form.phone.value = user.phone ?? "";
   $("[data-email]").textContent = user.email;
-  $("[data-role]").textContent = ROLE_LABELS[user.role] ?? user.role;
+  $("[data-role]").textContent = roleLabel(user.role);
   $("[data-balance]").textContent = formatMoney(user.balance);
 }
 

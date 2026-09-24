@@ -22,6 +22,7 @@ class UserOut(BaseModel):
     email: str
     phone: str | None
     role: Role
+    status: UserStatus
 
 
 class UserUpdateIn(BaseModel):

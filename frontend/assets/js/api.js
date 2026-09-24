@@ -39,6 +39,13 @@ async function request(path, { method = "GET", body, form, auth = true, retry = 
     headers,
     body: payload,
     credentials: "include",
+    // Sin esto, el navegador puede servir un GET repetido (misma URL) desde su
+    // caché en vez de pedirlo de nuevo: el backend no manda `Cache-Control`, y
+    // ese es exactamente el patrón de esta app — la misma URL (`/users?...`)
+    // se vuelve a pedir todo el tiempo después de crear/editar algo, esperando
+    // el dato fresco. Se notó recién con el panel de admin: crear un usuario y
+    // refrescar la lista en el momento seguía mostrando la lista vieja.
+    cache: "no-store",
   });
 
   if (res.status === 401 && retry && auth) {
