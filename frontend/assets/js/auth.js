@@ -69,6 +69,32 @@ export async function logout() {
 }
 
 /**
+ * Refleja la sesión en el widget del header (nombre + "Cerrar sesión", o
+ * "Ingresar"), sin ocultar el resto del header. Las páginas sin ese widget
+ * (las de auth, con su propio header minimalista) no hacen nada acá.
+ *
+ * Llamarlo con el resultado de `bootstrapSession()` en toda página pública;
+ * `requireRole()` ya lo hace por su cuenta.
+ */
+export function renderSessionUI(user) {
+  const nameEl = document.querySelector("[data-session-name]");
+  const logoutBtn = document.querySelector("[data-session-logout]");
+  const loginLink = document.querySelector("[data-session-login]");
+  if (!nameEl || !logoutBtn || !loginLink) return;
+
+  nameEl.classList.toggle("hidden", !user);
+  logoutBtn.classList.toggle("hidden", !user);
+  loginLink.classList.toggle("hidden", Boolean(user));
+  if (user) nameEl.textContent = `Hola, ${user.first_name}`;
+}
+
+// Delegado (no por página): cualquier página que traiga el partial del header
+// ya tiene el botón de logout funcionando, sin tener que conectarlo a mano.
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-session-logout]")) logout();
+});
+
+/**
  * roles === undefined -> "cualquier usuario logueado" (páginas de cliente,
  * sin atarlas a un rol puntual). roles: string | string[] -> rol específico
  * (ADMIN/DELIVERY). Sin sesión o sin el rol que corresponde, redirige a
@@ -81,5 +107,6 @@ export async function requireRole(roles) {
     location.href = `${LOGIN_URL}?next=${encodeURIComponent(location.pathname)}`;
     throw new Error("no autorizado");
   }
+  renderSessionUI(me);
   return me;
 }

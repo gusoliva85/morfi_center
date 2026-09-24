@@ -249,7 +249,12 @@
 
 <script type="module">
   import { injectPartials } from "./assets/js/ui.js";
+  import { bootstrapSession, renderSessionUI } from "./assets/js/auth.js";
+
   await injectPartials();
+  // Página pública (RN-33 / RF-USR-11): solo para saludar si hay sesión,
+  // nunca bloquea ni redirige — navegar el catálogo no requiere estar logueado.
+  renderSessionUI(await bootstrapSession());
 </script>
 </body>
 </html>

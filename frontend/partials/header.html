@@ -6,6 +6,27 @@
   </div>
 </div>
 <div data-partial="top-nav"></div>
+<!-- Estado de sesión: solo en escritorio (mismo corte que top-nav). En
+     mobile, "Cuenta" del bottom-nav ya cumple ese rol — agregar esto acá
+     también apretaría un header ya angosto. Nunca oculta el resto del
+     header (RN de T-1.11.4): son elementos extra, no un reemplazo. -->
+<div class="hidden items-center gap-3 lg:flex" data-session>
+  <span class="hidden text-[13px] font-medium text-bark/70" data-session-name></span>
+  <button
+    class="hidden text-[13px] font-semibold text-brick underline decoration-brick/40 underline-offset-2"
+    type="button"
+    data-session-logout
+  >
+    Cerrar sesión
+  </button>
+  <a
+    class="hidden text-[13px] font-semibold text-forest underline decoration-forest/40 underline-offset-2"
+    href="/pages/auth/login.html"
+    data-session-login
+  >
+    Ingresar
+  </a>
+</div>
 <button class="blob relative grid h-11 w-11 place-items-center bg-bark text-cream" data-cart-toggle aria-label="Ver mi vianda">
   🧺
   <span class="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-mustard text-[10px] font-bold text-bark" data-cart-count>3</span>
