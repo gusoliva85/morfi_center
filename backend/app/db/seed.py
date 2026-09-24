@@ -6,8 +6,10 @@ from app.core.config import settings
 from app.core.enums import Role, VehicleType
 from app.db.session import SessionLocal
 from app.models import User
+from app.repositories.settings_repository import SettingsRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
+from app.services.settings_service import SPECS
 from app.services.user_admin_service import UserAdminService
 
 logger = logging.getLogger(__name__)
@@ -99,6 +101,32 @@ def seed_admin_from_env(session: Session) -> User | None:
     return admin
 
 
+def seed_system_settings(session: Session) -> list[str]:
+    """Guarda como filas los valores por defecto de las configuraciones (§6.11)
+    que todavía no existen en la base. Devuelve las claves que creó.
+
+    **Nunca pisa una clave ya guardada**: el seed puede volver a correrse con el
+    sistema andando, y no debe deshacer lo que un admin cambió desde el panel.
+    Tampoco depende del entorno: son valores de negocio, no secretos, así que
+    corre igual en producción.
+
+    La API funciona sin esto (una clave sin guardar rige por su default), pero
+    con las filas materializadas la base es inspectable y cada valor queda
+    explícito en vez de implícito en el código.
+    """
+    settings_repo = SettingsRepository(session)
+    created: list[str] = []
+    for spec in SPECS.values():
+        key = spec.key.value
+        if settings_repo.get_typed(key) is None:
+            settings_repo.set(key, spec.default, description=spec.description)
+            created.append(key)
+
+    if created:
+        logger.info("Configuraciones por defecto creadas: %s", ", ".join(created))
+    return created
+
+
 def run_seed(session: Session) -> None:
     """Datos semilla idempotentes (correr dos veces no duplica nada).
 
@@ -107,6 +135,7 @@ def run_seed(session: Session) -> None:
     """
     seed_admin_from_env(session)
     seed_test_users(session)
+    seed_system_settings(session)
 
 
 def main() -> None:

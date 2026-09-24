@@ -343,6 +343,20 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 
 `.github/workflows/deploy-backend.yml` — dispara con cualquier push a `master` que toque `backend/**`: `git pull`, reinstala dependencias si `requirements.txt` cambió, `alembic upgrade head`, `sudo systemctl restart morficenter-api`.
 
+### 7.5 Configuración del negocio en el servidor (T-2.1.4)
+
+El deploy automático **no** corre el seed. Para que las configuraciones del negocio (`system_settings`: horarios del turno, envío, datos de transferencia, etc.) queden guardadas como filas en la base del servidor:
+
+```bash
+cd ~/morfi_center/backend && source .venv/bin/activate
+python -m app.db.seed
+```
+
+- **Es seguro correrlo las veces que haga falta**: solo crea las configuraciones que faltan y **nunca pisa** las que el admin cambió desde el panel.
+- En producción **no** crea los usuarios de prueba (contraseñas públicas); solo crea el primer admin si están `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`.
+- No es obligatorio para que la app ande: una configuración sin guardar rige por su valor por defecto (el `GET /settings` del admin las muestra igual, marcadas como `is_default`).
+- Los datos de transferencia (`payment.transfer`) arrancan **sin CBU ni titular**: el admin tiene que cargarlos antes de abrir al público.
+
 ### Checklist de esta tarea (T-0.7.8)
 
 - [ ] Un push a `master` con un cambio en `backend/` dispara el workflow (ver pestaña *Actions* del repo).

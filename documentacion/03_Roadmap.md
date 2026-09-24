@@ -537,9 +537,14 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   _Prueba:_ **Verificado con 22 tests de API** (suite completa: 554 pasan): admin actualiza `payment.transfer`; customer y delivery → 403 y no se guarda nada; sin sesión → 401; listado completo con defaults y tipos; auditoría con antes/después (incluido el "antes" = default); PUT sin cambio no audita; inválido → 422 sin efectos; clave desconocida → 404; cuerpo sin `value` → 422; dato corrupto visible y reparable. _Depende de:_ T-2.1.2, T-1.5.2
   _Nota para `T-2.1.4`:_ como el `GET` ya devuelve el set completo sin seed, el seed pasa a ser solo "materializar" los defaults como filas (útil para inspeccionar la base y para que el deploy deje todo explícito), no un requisito para que la API funcione.
 
-- [ ] **T-2.1.4 · [Backend + Docs] Seed de `system_settings`**
+- [x] **T-2.1.4 · [Backend + Docs] Seed de `system_settings`**
   `db/seed.py` inserta todas las claves con sus defaults.
-  _Prueba:_ tras el seed, `GET /settings` devuelve el set completo. _Depende de:_ T-2.1.2
+  **Decisiones:**
+  1. **Solo crea lo que falta y nunca pisa lo guardado**: el seed puede correrse con el sistema andando sin deshacer lo que un admin cambió desde el panel. Devuelve la lista de claves que creó.
+  2. **Corre también en producción** (a diferencia de los usuarios de prueba): son valores de negocio, no secretos.
+  3. **Sin rastro de auditoría** y con `updated_by = NULL`: no es un cambio de nadie, y auditarlo llenaría el historial en cada corrida.
+  4. **El deploy automático no lo corre** (no se tocó el workflow): queda documentado en `deploy/DEPLOY.md §7.5` cómo correrlo en el servidor. No es obligatorio: la API funciona igual con los defaults (`T-2.1.3`).
+  _Prueba:_ **Verificado con 10 tests** (suite completa abajo): crea las 11 claves con su valor, descripción y `updated_by` nulo; los valores leídos con y sin seed son idénticos; segunda corrida no crea nada; no pisa un valor cambiado; completa solo lo faltante; no audita; corre en producción; tras el seed, `GET /settings` devuelve el set completo (ya como filas reales, `is_default: false`). Además corrido dos veces contra la base local: 11 filas la primera vez, ninguna la segunda. _Depende de:_ T-2.1.2
 
 ## Tema 2.2 · Turnos
 
