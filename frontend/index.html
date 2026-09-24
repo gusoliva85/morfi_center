@@ -2,7 +2,10 @@
 <html lang="es-AR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- viewport-fit=cover: sin esto, env(safe-area-inset-bottom) del nav fijo
+     (bottom-nav.html) siempre vale 0 y el menú puede quedar pegado al borde
+     en celulares con muesca/home indicator (iPhone). -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Morfi Center · Almuerzos de olla</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />

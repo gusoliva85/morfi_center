@@ -1,11 +1,35 @@
 <!-- Fijo al viewport (no al contenedor): un `position:fixed` escapa de un
      ancestro con `overflow-hidden` (como `.paper`) mientras ese ancestro no
      tenga `transform`/`filter`, así que queda flotando sobre toda la pantalla
-     sin necesidad de sacarlo del HTML de cada página. -->
-<nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-bark/12 bg-cream py-2 text-[11px] text-bark/45 shadow-[0_-6px_16px_-6px_#3b2e2225] lg:hidden" aria-label="Navegación móvil">
-  <a class="flex flex-col items-center gap-1 py-2 text-forest" href="/index.html"><span>◈</span>Inicio</a>
-  <a class="flex flex-col items-center gap-1 py-2" href="/pages/cliente/menu.html"><span>☰</span>Olla</a>
-  <a class="flex flex-col items-center gap-1 py-2" href="/pages/cliente/carrito.html"><span>🧺</span>Vianda</a>
-  <a class="flex flex-col items-center gap-1 py-2" href="/pages/cliente/pedidos.html"><span>◇</span>Pedidos</a>
-  <a class="flex flex-col items-center gap-1 py-2" href="/pages/cliente/perfil.html"><span>○</span>Cuenta</a>
+     sin necesidad de sacarlo del HTML de cada página.
+
+     Insignias circulares (`.blob`) igual que el logo y el botón del carrito
+     del header — la pestaña activa usa relleno sólido forest (mismo
+     tratamiento que esos dos), el resto queda neutro. Antes usaba símbolos
+     sueltos sin relación entre sí (◈ ☰ ◇ ○ + un solo emoji 🧺); ahora los 5
+     son emoji, y "Olla" usa la olla 🍲 en vez de un ícono de menú genérico. -->
+<nav
+  class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 gap-1 rounded-t-[28px] border-2 border-bark/15 bg-cream px-2 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 text-[11px] font-semibold text-bark/50 shadow-[0_-10px_28px_-10px_#3b2e2235] lg:hidden"
+  aria-label="Navegación móvil"
+>
+  <a class="flex flex-col items-center gap-1.5" href="/index.html" aria-current="page">
+    <span class="blob grid h-10 w-10 place-items-center bg-forest text-lg text-cream">🏠</span>
+    <span class="text-forest">Inicio</span>
+  </a>
+  <a class="flex flex-col items-center gap-1.5" href="/pages/cliente/menu.html">
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg">🍲</span>
+    <span>Olla</span>
+  </a>
+  <a class="flex flex-col items-center gap-1.5" href="/pages/cliente/carrito.html">
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg">🧺</span>
+    <span>Vianda</span>
+  </a>
+  <a class="flex flex-col items-center gap-1.5" href="/pages/cliente/pedidos.html">
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg">🧾</span>
+    <span>Pedidos</span>
+  </a>
+  <a class="flex flex-col items-center gap-1.5" href="/pages/cliente/perfil.html">
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg">👤</span>
+    <span>Cuenta</span>
+  </a>
 </nav>
