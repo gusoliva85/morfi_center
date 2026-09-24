@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.enums import ShiftStatus
-from app.core.timezone import now_utc, resolve_shift_instant
+from app.core.timezone import now_utc, resolve_shift_instant, to_local
 from app.models import Shift
+from app.repositories.shift_repository import ShiftRepository
 from app.services.settings_service import SettingsService
 
 # Estados que solo existen porque un admin los puso a mano: una vez ahí, el
@@ -64,6 +66,7 @@ class ShiftService:
     def __init__(self, session: Session) -> None:
         self.session = session
         self.settings = SettingsService(session)
+        self.shifts = ShiftRepository(session)
 
     def resolve_window(self, shift: Shift) -> ShiftWindow:
         return resolve_window(shift, self.settings.get_timezone())
@@ -73,3 +76,39 @@ class ShiftService:
 
     def is_ordering_open(self, shift: Shift, now: datetime | None = None) -> bool:
         return is_ordering_open(shift, now or now_utc(), self.settings.get_timezone())
+
+    def ensure_today_shift(self, now: datetime | None = None) -> Shift | None:
+        """El turno de hoy, creándolo con la plantilla `shift.default` si todavía
+        no existe. `None` si hoy no es un día de operación (`weekdays`).
+
+        No hay un proceso que lo cree de madrugada (§9.9): lo dispara el primer
+        flujo que necesita "el turno de hoy" (`GET /shift/current`, crear un
+        pedido, abrir el panel admin). "Hoy" es la fecha **local** en la zona
+        configurada, no la de UTC: a las 23:00 de Buenos Aires ya es el día
+        siguiente en UTC, pero el turno sigue siendo el de hoy.
+
+        Un turno que ya existe se devuelve tal cual aunque hoy no sea día de
+        operación (un admin pudo crearlo a mano) y aunque la plantilla haya
+        cambiado desde entonces: no se toca lo ya creado.
+
+        Llamarlo **al principio** del flujo: si dos requests lo crean a la vez,
+        la base frena al segundo (`UNIQUE`) y acá se hace `rollback` de la
+        transacción completa —igual que en el registro de usuarios— para leer el
+        turno que ganó. Lo pendiente sin guardar de esa transacción se pierde.
+        """
+        tz = self.settings.get_timezone()
+        today = to_local(now or now_utc(), tz).date()
+
+        shift = self.shifts.get_current(today)
+        if shift is not None:
+            return shift
+
+        template = self.settings.get_shift_default()
+        if today.isoweekday() not in template.weekdays:
+            return None
+
+        try:
+            return self.shifts.create_from_default(today, template)
+        except IntegrityError:
+            self.session.rollback()
+            return self.shifts.get_current(today)

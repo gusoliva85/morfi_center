@@ -569,9 +569,15 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   5. Zonas con horario de verano funcionan (la misma hora de pared cae en instantes distintos según la fecha del turno).
   _Prueba:_ **Verificado con 31 tests nuevos** (suite completa: 610 pasan): conversión a UTC de apertura/cierre/límite de cancelación; ventana de cancelación cero; otra zona (Bogotá) y horario de verano (Madrid, invierno vs. verano); estado un segundo antes/en punto/después de abrir y de cerrar, el día anterior y el siguiente; mismo `now` → mismo estado; `now` expresado en otra zona; `is_ordering_open` dentro/fuera de la ventana y con estados guardados posteriores al cierre; la zona configurada por el admin gobierna los turnos; sin `now` usa el reloj. _Depende de:_ T-2.2.1, T-0.2.5
 
-- [ ] **T-2.2.3 · [Lógica] `ShiftService.ensure_today_shift`**
+- [x] **T-2.2.3 · [Lógica] `ShiftService.ensure_today_shift`**
   Si no existe el turno del día (según `SHIFT_DEFAULT` y `weekdays`), lo crea. Idempotente.
-  _Prueba:_ test: primera llamada crea, segunda no duplica; en día no operativo no crea. _Depende de:_ T-2.2.2, T-2.1.2
+  **Decisiones:**
+  1. **"Hoy" es la fecha local en la zona configurada, no la de UTC**: a las 23:00 de Buenos Aires ya es el día siguiente en UTC, pero el turno sigue siendo el de hoy (y a las 00:00 local arranca el nuevo).
+  2. **Devuelve `None` si hoy no es día de operación** (`weekdays`, numeración ISO 1=lunes…7=domingo) y no crea nada.
+  3. **Un turno que ya existe se devuelve tal cual**, aunque hoy no sea día de operación (un admin pudo crearlo a mano) y aunque la plantilla haya cambiado después: no se toca lo ya creado.
+  4. **Se crea aunque ya haya pasado la hora de cierre** (alguien entra a las 20:00 y no había turno): no hay un horario de creación, el estado se deriva de la hora y saldrá `CLOSED`.
+  5. **Carrera:** si dos requests lo crean a la vez, la base frena al segundo (`UNIQUE`); se hace `rollback` de la transacción y se devuelve el turno ganador, sin error ni duplicado. Es el mismo patrón que el registro de usuarios y el refresh. **Consecuencia a tener presente: llamarlo al principio del flujo**, porque el `rollback` descarta lo que hubiera pendiente sin guardar en esa transacción.
+  _Prueba:_ **Verificado con 16 tests** (suite completa: 626 pasan): primera llamada crea (con la plantilla), segunda no duplica; sábado y domingo no crean nada; agregar el sábado a `weekdays` lo vuelve operativo; turno manual en día no operativo se devuelve; "hoy" local vs. UTC, límite de medianoche y zona configurada (Auckland); cambiar la plantilla no altera lo creado; creación tras el cierre; sin `now` usa el reloj; **carrera simulada contra el `UNIQUE` real de la base** (devuelve el ganador, relee tras el rollback y la sesión sigue usable). _Depende de:_ T-2.2.2, T-2.1.2
 
 - [ ] **T-2.2.4 · [Lógica] Transiciones de turno**
   `open()`/`close()` **no son un job**: se resuelven solas al calcular `current_status(shift, now)` (T-2.2.2) — no hay una transición que "correr", el estado siempre se deriva de la hora. Lo que sí necesita una acción explícita es `on_shift_closed(shift)`: el efecto de **una sola vez** al detectar el cierre (congela `product_stock` del turno — se integra en Fase 4; marca pedidos sin validar como críticos — se integra en Fase 11), disparado por el primer request que consulta el turno después de la hora de cierre, con una marca en `shifts` para no repetirlo. `to_production()` sigue siendo una acción manual del admin.
