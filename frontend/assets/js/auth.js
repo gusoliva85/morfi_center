@@ -33,6 +33,18 @@ export async function login(email, password) {
   return currentUser;
 }
 
+/**
+ * Alta de cliente con login automático (el backend ya devuelve tokens en el
+ * 201, igual que `/auth/login`): `payload` es {first_name, last_name, email,
+ * password, phone?}.
+ */
+export async function register(payload) {
+  const data = await api.post("/auth/register", payload, { auth: false });
+  setToken(data.access_token);
+  currentUser = data.user;
+  return currentUser;
+}
+
 export async function logout() {
   try {
     await api.post("/auth/logout");
