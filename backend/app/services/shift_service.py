@@ -14,6 +14,8 @@ from app.models import AuditLog, Shift, User
 from app.repositories.shift_repository import ShiftRepository
 from app.services.settings_service import SettingsService
 
+NO_SERVICE = "NO_SERVICE"  # hoy no es día de operación: no hay turno
+
 ONLY_ADMIN = "Solo un administrador puede pasar el turno a producción."
 NOT_CLOSED_YET = "El turno todavía no cerró: hay que esperar a que terminen los pedidos."
 ALREADY_IN_PRODUCTION = "El turno ya está en producción (o más avanzado)."
@@ -34,6 +36,19 @@ _CLOSE_EFFECTS: list[CloseEffect] = []
 
 def register_close_effect(effect: CloseEffect) -> None:
     _CLOSE_EFFECTS.append(effect)
+
+
+@dataclass(frozen=True)
+class ShiftSnapshot:
+    """El turno de hoy tal como se ve en este instante. Sin turno (`shift` es
+    `None`), `status` es `NO_SERVICE` y no hay ventana ni cuenta regresiva."""
+
+    now: datetime
+    status: str  # SCHEDULED | OPEN | CLOSED | NO_SERVICE
+    shift: Shift | None
+    window: "ShiftWindow | None"
+    ordering_open: bool
+    seconds_to_close: int | None
 
 
 @dataclass(frozen=True)
@@ -214,3 +229,31 @@ class ShiftService:
         )
         self.session.flush()
         return shift
+
+    def current_snapshot(self, now: datetime | None = None) -> ShiftSnapshot:
+        """Todo lo que el home necesita saber del turno de hoy, en una sola
+        pasada con **un único `now`** (así el estado, la ventana y la cuenta
+        regresiva son coherentes entre sí).
+
+        Es lo que consulta `GET /shift/current`, así que es también quien
+        dispara, de forma perezosa, la creación del turno del día
+        (`ensure_today_shift`) y los efectos del cierre (`on_shift_closed`):
+        el primer visitante de la jornada / el primero después del cierre.
+        """
+        now = now or now_utc()
+        shift = self.ensure_today_shift(now)
+        if shift is None:
+            return ShiftSnapshot(now, NO_SERVICE, None, None, False, None)
+
+        self.on_shift_closed(shift, now)
+        tz = self.settings.get_timezone()
+        window = resolve_window(shift, tz)
+        seconds_to_close = max(0, int((window.close_at - now).total_seconds()))
+        return ShiftSnapshot(
+            now=now,
+            status=current_status(shift, now, tz).value,
+            shift=shift,
+            window=window,
+            ordering_open=is_ordering_open(shift, now, tz),
+            seconds_to_close=seconds_to_close,
+        )

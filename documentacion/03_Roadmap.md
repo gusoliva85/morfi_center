@@ -593,9 +593,15 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 2.4 · Endpoint del turno y front
 
-- [ ] **T-2.4.1 · [Backend] `GET /api/v1/shift/current`**
+- [x] **T-2.4.1 · [Backend] `GET /api/v1/shift/current`**
   Devuelve `{status, service_date, open_time, close_time, now, seconds_to_close, cancel_deadline, prep_eta}`. `now` es la hora del servidor en UTC.
-  _Prueba:_ test: turno abierto devuelve `seconds_to_close > 0`; cerrado → `status CLOSED`. _Depende de:_ T-2.2.2
+  **Decisiones:**
+  1. **Público** (lo consulta el home con o sin sesión) y con `Cache-Control: no-store`: la respuesta lleva la hora del servidor, cachearla la volvería mentira.
+  2. **Campos extra a los del documento:** `open_at`, `close_at` (instantes en UTC ya resueltos) y `ordering_open`. Así el contador de `T-2.4.3` no hace cuentas de zona horaria ni depende del reloj del dispositivo (`seconds_to_close` sale de la hora del servidor), y el front mira `ordering_open` —que además respeta un turno ya pasado a producción— para saber si se puede pedir.
+  3. **Un día sin servicio responde 200 con `status: "NO_SERVICE"`** y todo lo demás vacío (salvo `now`), no un error: es un estado normal (fin de semana), no una falla. El front lo mostrará como "hoy no hay servicio".
+  4. **`seconds_to_close`** queda en 0 una vez cerrado (nunca negativo); antes de abrir cuenta hasta el cierre.
+  5. **Es el que dispara, sin ningún job,** la creación del turno del día (`ensure_today_shift`) y los efectos del cierre (`on_shift_closed`): el primer visitante de la jornada y el primero después del cierre. Todo con un único `now` (`ShiftService.current_snapshot`) para que estado, ventana y cuenta regresiva sean coherentes entre sí.
+  _Prueba:_ **Verificado con 15 tests de API** (suite completa: 662 pasan): abierto → `seconds_to_close > 0` (7200 exactos); cerrado → `CLOSED` y 0; antes de abrir → `SCHEDULED` y no se puede pedir; el instante exacto del cierre ya es `CLOSED`; forma exacta de la respuesta (con y sin turno); sin sesión; no-store; crea el turno una vez y no duplica; sábado → `NO_SERVICE` sin crear nada; "hoy" en fecha local; refleja la plantilla y la zona configuradas por el admin; turno en producción → `ordering_open: false`; los efectos del cierre se aplican una sola vez a través del endpoint. Además probado contra el servidor local con la hora real: un solo turno creado, cerrado y marcado una vez. _Depende de:_ T-2.2.2
 
 - [ ] **T-2.4.2 · [Backend] `GET /shift` y `PATCH /shift/{id}` y `POST /shift/{id}/transition` (admin)**
   Listar por fecha, ajustar horarios/ventana del turno, forzar `open`/`close`/`to_production`.
