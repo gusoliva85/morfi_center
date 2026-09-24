@@ -505,9 +505,13 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 2.1 · `system_settings`
 
-- [ ] **T-2.1.1 · [Backend] Modelo `SystemSetting` + `SettingsRepository`**
+- [x] **T-2.1.1 · [Backend] Modelo `SystemSetting` + `SettingsRepository`**
   Tabla clave/valor JSON (§6.10). Repo con `get(key, default)`, `get_typed`, `set(key, value, actor)`.
-  _Prueba:_ set/get de una clave JSON compleja (tiers de envío) ida y vuelta. _Depende de:_ T-0.3.2
+  **Decisiones:**
+  1. **`value` siempre guarda JSON real** (`json.dumps`), sin importar el `value_type` — un string común se guarda como `'"algo"'` (con comillas), no como texto plano. `json.loads` decodifica los cuatro casos (json/string/int/bool) sin distinción, así que `value_type` es **metadata informativa** para quien lea el dato (por ejemplo, para que el admin sepa qué tipo de control mostrar), no algo que cambie cómo se serializa o se lee.
+  2. **`value_type` se infiere solo, a partir del valor de Python que se guarda** — quien llama a `set()` nunca lo declara a mano. Ojo con el orden de los `isinstance`: en Python `isinstance(True, int)` da `True`, así que el chequeo de `bool` va **antes** que el de `int`, o un booleano quedaría guardado (y mostrado) como `1`/`0`.
+  3. **`get_typed()` devuelve la fila completa**, no solo el valor — la usará `T-2.1.3` para exponer el `value_type` de cada setting en `GET /settings`, sin que la API tenga que adivinarlo por su cuenta.
+  _Prueba:_ set/get de una clave JSON compleja (tiers de envío) ida y vuelta. **Verificado con 17 tests**: los 5 tipos de valor (json/string/int/bool, incluido el caso booleano-vs-entero de arriba) infieren el `value_type` correcto; actualizar una clave existente no duplica la fila; `set` sin `actor` dispara `updated_by=NULL` (lo necesita el seed, `T-2.1.4`, que escribe los defaults sin que ningún admin lo pida); la `description` se conserva si no se manda una nueva; y el valor queda en la base como JSON de verdad (`'{"lat": -34.63, "lng": -58.41}'`), no como un string de Python con comillas simples. Migración probada `upgrade`/`downgrade`/`upgrade`, y agregada al test genérico que compara el esquema migrado contra los modelos (que de paso detectó que `audit_log`, de `T-1.7.2`, nunca se había sumado a esa lista). _Depende de:_ T-0.3.2
 
 - [ ] **T-2.1.2 · [Lógica] `SettingsService` con claves conocidas y defaults**
   Enum/constantes de claves (`SHIFT_DEFAULT`, `TIMEZONE`, `COVERAGE_MODE`, ...). `get_shift_default()`, `get_payment_transfer()`, etc., con defaults de `02_Documento_Tecnico.md §6.11`. Validación de forma por clave.

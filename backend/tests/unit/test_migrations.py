@@ -17,6 +17,8 @@ EXPECTED_TABLES = {
     "carts",
     "customer_balances",
     "revoked_tokens",
+    "audit_log",
+    "system_settings",
 }
 
 
@@ -42,7 +44,7 @@ def table_names(db_path) -> set[str]:
         return {row[0] for row in rows}
 
 
-def test_upgrade_head_creates_every_phase1_table(migrated_db):
+def test_upgrade_head_creates_every_known_table(migrated_db):
     _, db_path = migrated_db
     assert EXPECTED_TABLES <= table_names(db_path)
 
@@ -61,7 +63,7 @@ def test_migrated_schema_matches_the_models(migrated_db):
     assert diff == [], f"El esquema migrado no coincide con los modelos: {diff}"
 
 
-def test_downgrade_removes_every_phase1_table(migrated_db):
+def test_downgrade_removes_every_known_table(migrated_db):
     """Baja hasta `base` y no `-1`: con más de una migración encima, `-1` solo
     revierte la última y el test dejaría de probar lo que dice probar."""
     _, db_path = migrated_db
@@ -84,3 +86,4 @@ def test_check_constraints_survive_the_migration(migrated_db):
     assert "CHECK (role IN ('CUSTOMER', 'ADMIN', 'DELIVERY'))" in ddl
     assert "CHECK (balance >= 0)" in ddl
     assert "vehicle_type IN ('moto','bici','auto','a_pie')" in ddl
+    assert "CHECK (value_type IN ('json', 'string', 'int', 'bool'))" in ddl
