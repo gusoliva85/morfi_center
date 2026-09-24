@@ -5,31 +5,31 @@
 
      Insignias circulares (`.blob`) igual que el logo y el botón del carrito
      del header — la pestaña activa usa relleno sólido forest (mismo
-     tratamiento que esos dos), el resto queda neutro. Antes usaba símbolos
-     sueltos sin relación entre sí (◈ ☰ ◇ ○ + un solo emoji 🧺); ahora los 5
-     son emoji, y "Olla" usa la olla 🍲 en vez de un ícono de menú genérico. -->
+     tratamiento que esos dos), el resto queda neutro. Los 5 arrancan neutros
+     acá: cuál está activa la decide `ui.js#highlightActiveNav` según la
+     página actual, no queda escrito a mano. -->
 <nav
   class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 gap-1 rounded-t-[28px] border-2 border-bark/15 bg-cream px-2 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 text-[11px] font-semibold text-bark/50 shadow-[0_-10px_28px_-10px_#3b2e2235] lg:hidden"
   aria-label="Navegación móvil"
 >
-  <a class="flex flex-col items-center gap-1.5" href="/index.html" aria-current="page">
-    <span class="blob grid h-10 w-10 place-items-center bg-forest text-lg text-cream">🏠</span>
-    <span class="text-forest">Inicio</span>
+  <a class="flex flex-col items-center gap-1.5" href="/index.html">
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg" data-nav-badge>🏠</span>
+    <span data-nav-label>Inicio</span>
   </a>
   <a class="flex flex-col items-center gap-1.5" href="/pages/cliente/menu.html">
-    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg">🍲</span>
-    <span>Olla</span>
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg" data-nav-badge>🍲</span>
+    <span data-nav-label>Olla</span>
   </a>
   <a class="flex flex-col items-center gap-1.5" href="/pages/cliente/carrito.html">
-    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg">🧺</span>
-    <span>Vianda</span>
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg" data-nav-badge>🧺</span>
+    <span data-nav-label>Vianda</span>
   </a>
   <a class="flex flex-col items-center gap-1.5" href="/pages/cliente/pedidos.html">
-    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg">🧾</span>
-    <span>Pedidos</span>
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg" data-nav-badge>🧾</span>
+    <span data-nav-label>Pedidos</span>
   </a>
   <a class="flex flex-col items-center gap-1.5" href="/pages/cliente/perfil.html">
-    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg">👤</span>
-    <span>Cuenta</span>
+    <span class="blob grid h-10 w-10 place-items-center bg-bark/8 text-lg" data-nav-badge>👤</span>
+    <span data-nav-label>Cuenta</span>
   </a>
 </nav>

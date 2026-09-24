@@ -23,6 +23,40 @@ export async function injectPartials(root = document) {
     await Promise.all(pending.map(loadPartial));
     pending = $all("[data-partial]:not([data-partial-loaded])", root);
   }
+  highlightActiveNav(root);
+}
+
+/**
+ * Marca como activo el link de top-nav/bottom-nav que apunta a la página
+ * actual, comparando el pathname del `href` contra `location.pathname`.
+ *
+ * Antes la pestaña "activa" venía escrita a mano en el HTML de cada partial
+ * (siempre "Inicio"), lo cual era invisible mientras solo existía una página
+ * (`index.html`): con la segunda página real del sitio (`perfil.html`) ya se
+ * notaría mal — marcaría "Inicio" estando en "Mi cuenta". Se llama sola desde
+ * `injectPartials()`, para cualquier página con header/bottom-nav, sin que
+ * cada página tenga que acordarse de invocarla.
+ */
+function highlightActiveNav(root) {
+  const current = location.pathname;
+  $all('nav[aria-label] a[href]', root).forEach((link) => {
+    const isActive = new URL(link.getAttribute("href"), location.origin).pathname === current;
+    const badge = link.querySelector("[data-nav-badge]");
+    const label = link.querySelector("[data-nav-label]");
+    if (badge || label) {
+      // bottom-nav: insignia + etiqueta por separado (mismo tratamiento que
+      // el logo/carrito del header — ver partials/bottom-nav.html).
+      badge?.classList.toggle("bg-forest", isActive);
+      badge?.classList.toggle("text-cream", isActive);
+      badge?.classList.toggle("bg-bark/8", !isActive);
+      label?.classList.toggle("text-forest", isActive);
+    } else {
+      // top-nav: texto simple, sin insignia.
+      link.classList.toggle("text-bark", isActive);
+    }
+    if (isActive) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
 }
 
 async function loadPartial(node) {
