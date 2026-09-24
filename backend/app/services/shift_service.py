@@ -1,18 +1,39 @@
+import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.enums import ShiftStatus
+from app.core.enums import Role, ShiftStatus
+from app.core.errors import ForbiddenError, InvalidTransitionError
 from app.core.timezone import now_utc, resolve_shift_instant, to_local
-from app.models import Shift
+from app.models import AuditLog, Shift, User
 from app.repositories.shift_repository import ShiftRepository
 from app.services.settings_service import SettingsService
+
+ONLY_ADMIN = "Solo un administrador puede pasar el turno a producción."
+NOT_CLOSED_YET = "El turno todavía no cerró: hay que esperar a que terminen los pedidos."
+ALREADY_IN_PRODUCTION = "El turno ya está en producción (o más avanzado)."
 
 # Estados que solo existen porque un admin los puso a mano: una vez ahí, el
 # turno ya no acepta pedidos aunque el reloj diga otra cosa.
 _PAST_CLOSING = (ShiftStatus.IN_PRODUCTION, ShiftStatus.DISPATCHING, ShiftStatus.FINISHED)
+
+# Efectos de una sola vez del cierre del turno (`on_shift_closed`). Hoy no hay
+# ninguno: cada fase que necesite uno lo registra acá con `register_close_effect`
+# (Fase 4: congelar `product_stock` del turno; Fase 11: marcar como críticos los
+# pedidos sin validar). Reciben la sesión y el turno, y corren **dentro de la
+# misma transacción** que la marca de "ya aplicado": si uno falla, se deshace
+# todo y el próximo request lo reintenta.
+CloseEffect = Callable[[Session, Shift], None]
+_CLOSE_EFFECTS: list[CloseEffect] = []
+
+
+def register_close_effect(effect: CloseEffect) -> None:
+    _CLOSE_EFFECTS.append(effect)
 
 
 @dataclass(frozen=True)
@@ -112,3 +133,84 @@ class ShiftService:
         except IntegrityError:
             self.session.rollback()
             return self.shifts.get_current(today)
+
+    def on_shift_closed(self, shift: Shift, now: datetime | None = None) -> bool:
+        """Aplica **una sola vez** los efectos del cierre (§9.9). Devuelve
+        `True` si esta llamada los aplicó, `False` si el turno todavía no cerró
+        o ya estaban aplicados.
+
+        No es un job: lo llama cualquier request que consulte el turno (de un
+        cliente o del admin) y solo hace algo la primera vez que ve el cierre.
+        Es seguro llamarlo siempre.
+
+        Aunque dos requests lo detecten a la vez, uno solo lo aplica: se
+        "reclama" con un `UPDATE ... WHERE closed_effects_applied_at IS NULL`
+        y solo quien logra modificar la fila corre los efectos. Se guarda además
+        `status = CLOSED` (si estaba `SCHEDULED`/`OPEN`) para que la base
+        cuente lo mismo que la marca.
+        """
+        now = now or now_utc()
+        if shift.closed_effects_applied_at is not None:
+            return False
+        if self.current_status(shift, now) is not ShiftStatus.CLOSED:
+            return False
+
+        claimed = self.session.execute(
+            update(Shift)
+            .where(Shift.id == shift.id, Shift.closed_effects_applied_at.is_(None))
+            .values(closed_effects_applied_at=now)
+        ).rowcount
+        if claimed == 0:
+            self.session.refresh(shift)  # otro request ya lo aplicó: no repetir
+            return False
+
+        self.session.refresh(shift)
+        for effect in _CLOSE_EFFECTS:
+            effect(self.session, shift)
+        if shift.status in (ShiftStatus.SCHEDULED, ShiftStatus.OPEN):
+            self.shifts.set_status(shift, ShiftStatus.CLOSED)
+        return True
+
+    def to_production(
+        self,
+        shift: Shift,
+        actor: User,
+        now: datetime | None = None,
+        *,
+        ip: str | None = None,
+    ) -> Shift:
+        """El admin decide cuándo arrancar a cocinar: pasa el turno a
+        `IN_PRODUCTION`. **Solo lo dispara un admin, nunca el sistema.**
+
+        Solo se puede una vez que cerraron los pedidos (si no, entrarían
+        pedidos nuevos a un turno ya en cocina) y una sola vez. Se asegura de
+        que los efectos del cierre estén aplicados antes de seguir, aunque
+        nadie hubiera consultado el turno desde que cerró.
+
+        Queda en `audit_log`. El paso masivo `PAYMENT_APPROVED` →
+        `IN_PREPARATION` de los pedidos del turno se suma cuando existan los
+        pedidos (Fase 9).
+        """
+        now = now or now_utc()
+        if actor.role != Role.ADMIN:
+            raise ForbiddenError(ONLY_ADMIN)
+        if shift.status in _PAST_CLOSING:
+            raise InvalidTransitionError(ALREADY_IN_PRODUCTION)
+        if self.current_status(shift, now) is not ShiftStatus.CLOSED:
+            raise InvalidTransitionError(NOT_CLOSED_YET)
+
+        before = shift.status
+        self.on_shift_closed(shift, now)
+        self.shifts.set_status(shift, ShiftStatus.IN_PRODUCTION)
+        self.session.add(
+            AuditLog(
+                actor_id=actor.id,
+                action="shift.to_production",
+                entity_type="shift",
+                entity_id=str(shift.id),
+                data=json.dumps({"before": before.value, "after": shift.status.value}),
+                ip=ip,
+            )
+        )
+        self.session.flush()
+        return shift

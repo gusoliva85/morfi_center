@@ -1,11 +1,11 @@
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import CheckConstraint, Date, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import ServiceType, ShiftStatus
 from app.db.base import Base
-from app.db.types import TimestampMixin, enum_column
+from app.db.types import TimestampMixin, UTCDateTime, enum_column
 
 
 class Shift(TimestampMixin, Base):
@@ -42,3 +42,8 @@ class Shift(TimestampMixin, Base):
     status: Mapped[ShiftStatus] = mapped_column(
         enum_column(ShiftStatus, "shift_status"), nullable=False, default=ShiftStatus.SCHEDULED
     )
+    # Marca de "los efectos de una sola vez del cierre ya se aplicaron" (§9.9,
+    # `ShiftService.on_shift_closed`). Se reclama con un UPDATE condicional
+    # (`... WHERE closed_effects_applied_at IS NULL`), así que aunque dos
+    # requests detecten el cierre a la vez, solo uno lo aplica.
+    closed_effects_applied_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
