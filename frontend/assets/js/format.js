@@ -39,3 +39,22 @@ export function formatTime(isoString) {
     hour12: false, // sin esto, es-AR devuelve "12:00 p. m." en vez de "12:00"
   });
 }
+
+/**
+ * "12:00" -> "las 12 del mediodía", "08:30" -> "las 8:30 de la mañana",
+ * "13:00" -> "la 1 de la tarde", "21:00" -> "las 9 de la noche".
+ * Sirve para frases ("Pedí hasta las 12 del mediodía"): el backend manda la
+ * hora de pared del negocio en "HH:MM" y acá solo se la dice como la diría una
+ * persona, sin hacer cuentas de zona horaria.
+ */
+export function spokenTime(hhmm) {
+  const [hour, minute] = hhmm.split(":").map(Number);
+  const hour12 = hour % 12 || 12;
+  const clock = minute === 0 ? String(hour12) : `${hour12}:${pad2(minute)}`;
+  const article = hour12 === 1 ? "la" : "las";
+  let period = "de la tarde";
+  if (hour === 12 && minute === 0) period = "del mediodía";
+  else if (hour < 12) period = "de la mañana";
+  else if (hour >= 20) period = "de la noche";
+  return `${article} ${clock} ${period}`;
+}

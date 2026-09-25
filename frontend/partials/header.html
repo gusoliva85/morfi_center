@@ -34,12 +34,12 @@
   </button>
   <!-- Countdown chico, solo en mobile: en escritorio el ticket grande del
        home ya cumple ese rol y no tenía el problema de espacio de mobile.
-       Estático por ahora, igual que el ticket grande (T-2.4.3, Fase 2, es
-       quien conecta los dos a la hora real del turno). -->
+       Lo mueve countdown.js (bindHeaderChip) con el turno real; el texto
+       inicial es neutro para no mostrar una hora falsa mientras carga. -->
   <div
     class="whitespace-nowrap rounded-full border-2 border-brick/30 bg-brick/10 px-2.5 py-0.5 font-display text-[12px] font-bold tabular-nums text-brick lg:hidden"
     data-countdown-chip
   >
-    ⏳ 01:42:15
+    ⏳ --:--:--
   </div>
 </div>

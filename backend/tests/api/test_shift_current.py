@@ -65,6 +65,7 @@ async def test_the_response_has_the_documented_shape(client, at):
         "open_at": "2026-09-24T11:00:00Z",
         "close_at": "2026-09-24T15:00:00Z",
         "cancel_deadline": "2026-09-24T14:40:00Z",
+        "cancel_deadline_time": "11:40",
         "seconds_to_close": 7200,
     }
 
@@ -166,6 +167,7 @@ async def test_a_non_operating_day_answers_no_service_and_creates_nothing(client
         "open_at": None,
         "close_at": None,
         "cancel_deadline": None,
+        "cancel_deadline_time": None,
         "seconds_to_close": None,
     }
     assert count_shifts(session) == 0
@@ -198,6 +200,7 @@ async def test_the_shift_reflects_the_template_the_admin_configured(client, sess
 
     assert (body["open_time"], body["close_time"], body["prep_eta"]) == ("09:00", "13:30", "13:45")
     assert body["cancel_deadline"] == "2026-09-24T16:00:00Z"  # 13:30 BA = 16:30Z, menos 30 min
+    assert body["cancel_deadline_time"] == "13:00"  # y en hora local
 
 
 async def test_the_shift_follows_the_configured_timezone(client, session, at):

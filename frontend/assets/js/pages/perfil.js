@@ -1,11 +1,13 @@
 import "../config.js"; // primero: api.js lee window.__MC_API__ al cargarse
 import { api, ApiError } from "../api.js";
 import { logout, renderSessionUI, requireRole } from "../auth.js";
+import { bindHeaderChip } from "../countdown.js";
 import { formatMoney, roleLabel } from "../format.js";
 import { $, injectPartials } from "../ui.js";
 import { isValidName } from "../validators.js";
 
 await injectPartials();
+bindHeaderChip(); // el chip del header muestra el turno real en todas las páginas
 // Página exclusiva de sesión (cualquier rol logueado, RN-33 / T-1.11.4): sin
 // sesión, requireRole() ya redirige a login con `next` de vuelta acá.
 const me = await requireRole();

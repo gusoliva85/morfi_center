@@ -50,12 +50,15 @@
 
       <!-- IZQUIERDA -->
       <section class="min-w-0">
-        <div class="inline-flex items-center gap-2 rounded-full bg-forest/12 px-3 py-1 text-[12px] font-semibold text-forest">
-          <span class="h-2 w-2 rounded-full bg-forest"></span> La olla está abierta
+        <!-- Badge, titular y ticket los completa assets/js/pages/home.js con
+             el turno real (GET /shift/current). El texto inicial es neutro a
+             propósito: nada que pueda ser falso mientras carga. -->
+        <div class="inline-flex items-center gap-2 rounded-full bg-bark/8 px-3 py-1 text-[12px] font-semibold text-bark/60" data-shift-badge role="status">
+          <span class="h-2 w-2 rounded-full bg-bark/30" data-shift-dot></span> <span data-shift-badge-text>Consultando la olla…</span>
         </div>
 
         <h1 class="mt-4 font-display text-[30px] font-bold leading-[1.08] sm:text-[36px] lg:text-[52px]">
-          Pedí tu vianda<br /><span class="text-brick">hasta las 12 del mediodía</span>
+          <span data-shift-headline-top>Pedí tu vianda</span><br /><span class="text-brick" data-shift-headline>hasta que cierre la olla</span>
         </h1>
         <!-- Este párrafo y el ticket grande de abajo solo van en escritorio:
              en mobile empujaban el menú fuera de la primera pantalla (ver
@@ -65,20 +68,20 @@
           Cocinamos a olla según lo que se encarga cada mañana. Cerramos, terminamos las cazuelas y salimos a repartir barrio por barrio.
         </p>
 
-        <!-- CUENTA REGRESIVA: ticket de kraft (estático, sin JS todavía) -->
+        <!-- CUENTA REGRESIVA: ticket de kraft (lo mueve countdown.js) -->
         <div class="relative mt-6 hidden lg:block lg:mt-7 lg:w-auto">
           <span class="tape"></span>
           <div class="lift rounded-2xl border-2 border-dashed border-bark/25 bg-cream px-5 py-5 sm:px-10">
-            <div class="font-hand text-[16px] text-brick">nos quedan…</div>
+            <div class="font-hand text-[16px] text-brick" data-shift-label>nos quedan…</div>
             <div class="mt-1 flex items-end justify-center gap-4 sm:justify-start sm:gap-5">
-              <div class="text-center"><div class="font-display text-[32px] font-bold leading-none tabular-nums sm:text-4xl">01</div><div class="mt-1 text-[10px] uppercase tracking-widest text-bark/40">horas</div></div>
+              <div class="text-center"><div class="font-display text-[32px] font-bold leading-none tabular-nums sm:text-4xl" data-shift-hours>--</div><div class="mt-1 text-[10px] uppercase tracking-widest text-bark/40">horas</div></div>
               <div class="pb-4 text-2xl text-bark/30">:</div>
-              <div class="text-center"><div class="font-display text-[32px] font-bold leading-none tabular-nums sm:text-4xl">42</div><div class="mt-1 text-[10px] uppercase tracking-widest text-bark/40">min</div></div>
+              <div class="text-center"><div class="font-display text-[32px] font-bold leading-none tabular-nums sm:text-4xl" data-shift-minutes>--</div><div class="mt-1 text-[10px] uppercase tracking-widest text-bark/40">min</div></div>
               <div class="pb-4 text-2xl text-bark/30">:</div>
-              <div class="text-center"><div class="font-display text-[32px] font-bold leading-none tabular-nums text-brick sm:text-4xl">15</div><div class="mt-1 text-[10px] uppercase tracking-widest text-bark/40">seg</div></div>
+              <div class="text-center"><div class="font-display text-[32px] font-bold leading-none tabular-nums text-brick sm:text-4xl" data-shift-seconds>--</div><div class="mt-1 text-[10px] uppercase tracking-widest text-bark/40">seg</div></div>
             </div>
             <div class="mt-3 dashed"></div>
-            <div class="mt-2 flex flex-wrap justify-between gap-x-3 text-[12px] text-bark/50"><span>Cierre 12:00</span><span>Cancelás hasta 11:40</span></div>
+            <div class="mt-2 flex flex-wrap justify-between gap-x-3 text-[12px] text-bark/50"><span data-shift-footer-left></span><span data-shift-footer-right></span></div>
           </div>
         </div>
 
@@ -266,14 +269,6 @@
   </div>
 </div>
 
-<script type="module">
-  import { injectPartials } from "./assets/js/ui.js";
-  import { bootstrapSession, renderSessionUI } from "./assets/js/auth.js";
-
-  await injectPartials();
-  // Página pública (RN-33 / RF-USR-11): solo para saludar si hay sesión,
-  // nunca bloquea ni redirige — navegar el catálogo no requiere estar logueado.
-  renderSessionUI(await bootstrapSession());
-</script>
+<script type="module" src="assets/js/pages/home.js"></script>
 </body>
 </html>

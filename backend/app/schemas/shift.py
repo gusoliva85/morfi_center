@@ -29,6 +29,7 @@ class ShiftCurrentOut(BaseModel):
     open_at: datetime | None = None
     close_at: datetime | None = None
     cancel_deadline: datetime | None = None
+    cancel_deadline_time: str | None = None  # el mismo límite, en hora local (HH:MM)
     seconds_to_close: int | None = None
 
 

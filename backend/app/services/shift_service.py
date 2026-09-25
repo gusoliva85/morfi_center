@@ -89,6 +89,7 @@ class ShiftSnapshot:
     window: "ShiftWindow | None"
     ordering_open: bool
     seconds_to_close: int | None
+    cancel_deadline_time: str | None = None  # HH:MM local, para mostrar
 
 
 @dataclass(frozen=True)
@@ -302,6 +303,7 @@ class ShiftService:
             window=window,
             ordering_open=is_ordering_open(shift, now, tz),
             seconds_to_close=seconds_to_close,
+            cancel_deadline_time=to_local(window.cancel_deadline, tz).strftime("%H:%M"),
         )
 
     # ---------- panel de admin (T-2.4.2) ----------

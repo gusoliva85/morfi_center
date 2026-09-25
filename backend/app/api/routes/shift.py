@@ -65,6 +65,7 @@ def current_shift(session: SessionDep, response: Response) -> ShiftCurrentOut:
         open_at=window.open_at if window else None,
         close_at=window.close_at if window else None,
         cancel_deadline=window.cancel_deadline if window else None,
+        cancel_deadline_time=snapshot.cancel_deadline_time,
         seconds_to_close=snapshot.seconds_to_close,
     )
 
