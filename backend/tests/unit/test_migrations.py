@@ -20,6 +20,7 @@ EXPECTED_TABLES = {
     "audit_log",
     "system_settings",
     "shifts",
+    "categories",
 }
 
 
@@ -90,3 +91,4 @@ def test_check_constraints_survive_the_migration(migrated_db):
     assert "CHECK (value_type IN ('json', 'string', 'int', 'bool'))" in ddl
     assert "CHECK (service_type IN ('BREAKFAST', 'LUNCH', 'DINNER'))" in ddl
     assert "UNIQUE (service_date, service_type)" in ddl
+    assert "CONSTRAINT uq_categories_slug UNIQUE (slug)" in ddl

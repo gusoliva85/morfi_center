@@ -661,9 +661,15 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   6. **Activar/desactivar no tiene lógica propia** (es una bandera): lo que importa es su efecto, que una categoría inactiva —y sus productos— no se vea en el catálogo público (`T-3.2.2`).
   _Prueba:_ **Verificado con 47 tests unitarios** (suite completa: 756 pasan): nombre (espacios, largo justo en el límite, solo símbolos, otros alfabetos); slug con acentos, ñ, símbolos, números y sin caracteres latinos; colisiones (`Sándwiches`/`Sandwiches`/`SÁNDWICHES` → `sandwiches`, `-2`, `-3`), huecos y que un slug numerado solo no bloquea al base; reordenar (identidad, independencia del orden de entrada, y 6 listas inválidas → error sin efectos). _Depende de:_ T-0.2.2
 
-- [ ] **T-3.1.2 · [Backend] Modelo `Category` + repo + migración**
+- [x] **T-3.1.2 · [Backend] Modelo `Category` + repo + migración**
   §6.3. Repo: `list_active`, `list_all`, `create`, `update`, `reorder`.
-  _Prueba:_ CRUD contra DB de test. _Depende de:_ T-3.1.1
+  **Decisiones:**
+  1. **El repositorio aplica las reglas de `T-3.1.1` por sí mismo** (`create` valida el nombre y calcula el slug; `update` valida el nombre; `reorder` valida la lista): ninguna categoría puede llegar a la base sin pasar por ellas, sin depender de que quien llama se acuerde. Es el mismo patrón que `UserRepository` con `user_service`.
+  2. **Una categoría nueva va al final del menú** (`sort_order` = el más alto + 1, aunque haya huecos). Los listados siempre salen en el orden del menú, con el `id` como desempate para que sea determinista.
+  3. **`update` cambia solo lo que se le pasa y nunca el slug** (renombrar no rompe links). `list_all` es lo que ve el admin; `list_active`, lo que verá el público.
+  4. **Slug único garantizado por la base** (`UNIQUE`), no solo por el código. Si dos altas simultáneas calculan el mismo slug libre, la segunda choca contra el `UNIQUE` y sale un **409** (`ConflictError`, con `rollback`) en vez de un 500 — mismo patrón que el registro de usuarios; la sesión sigue usable después.
+  5. **`reorder` con una lista inválida no cambia nada.** Ordena también a las categorías inactivas.
+  _Prueba:_ **Verificado con 31 tests** (suite completa: 787 pasan): alta y lectura; nombres que colisionan (`Sándwiches`/`Sandwiches`/`SÁNDWICHES` → `sandwiches`, `-2`, `-3`); alta al final del menú (también con huecos); nombre inválido → error sin guardar nada; `UNIQUE` real de la base y la carrera simulada contra él; listados en orden y `list_active` sin inactivas; búsqueda por slug; renombrar sin tocar el slug; reactivar; reordenar (persiste en la base, ordena inactivas, 3 listas inválidas sin efecto). Migración probada `upgrade`/`downgrade`/`upgrade` sobre la base local y sumada al test que compara esquema vs. modelos. _Depende de:_ T-3.1.1
 
 - [ ] **T-3.1.3 · [Backend] Endpoints de categorías**
   `GET /catalog/categories` (público: activas; `?all=true` admin: todas), `POST`, `PATCH /{id}`, `POST /reorder` (admin).
