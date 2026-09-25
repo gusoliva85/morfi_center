@@ -639,7 +639,8 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Cierre de fase
 
-- [ ] **T-2.99 · [Docs] `Fase 02 - Configuración y turnos.md`**
+- [x] **T-2.99 · [Docs] `Fase 02 - Configuración y turnos.md`**
+  Documento final de la fase (`documentacion/Fases/Fase 02 - Configuración y turnos.md`): qué se hizo, cómo quedó implementado (configuración, turnos, contador, pantalla de admin), fragmentos de código clave, cómo se probó, hallazgos y pendientes. `Usuarios.md` sin cambios (la fase no agregó usuarios). Al cerrar se encontró y corrigió que la tabla "Estado global" seguía marcando la Fase 1 como pendiente. Verificado en producción, sin escribir nada, que las rutas nuevas están desplegadas (ver §6 del cierre); **pendiente para usar el panel en producción: cargar el primer admin (`SEED_ADMIN_*`) y los datos de transferencia reales**.
 
 ---
 
@@ -1350,8 +1351,8 @@ No forma parte de este roadmap detallado; se planificará al cerrar el MVP.
 | Fase | Estado | Doc de cierre |
 |---|---|---|
 | 0 · Andamiaje y base visual | ✅ Completa | `Fase 00 - Andamiaje y base visual.md` |
-| 1 · Usuarios, roles y autenticación | ⬜ Pendiente | — |
-| 2 · Configuración y turnos | ⬜ Pendiente | — |
+| 1 · Usuarios, roles y autenticación | ✅ Completa (2 tareas en pausa) | `Fase 01 - Usuarios, roles y autenticación.md` |
+| 2 · Configuración y turnos | ✅ Completa | `Fase 02 - Configuración y turnos.md` |
 | 3 · Catálogo | ⬜ Pendiente | — |
 | 4 · Stock | ⬜ Pendiente | — |
 | 5 · Promociones y Plato del Día | ⬜ Pendiente | — |
