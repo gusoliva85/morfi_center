@@ -650,9 +650,16 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 3.1 · Categorías
 
-- [ ] **T-3.1.1 · [Lógica] Reglas de categoría**
+- [x] **T-3.1.1 · [Lógica] Reglas de categoría**
   `CatalogService`: nombre requerido, `slug` autogenerado y único, `sort_order`, activación/desactivación. Reordenamiento por lista de ids.
-  _Prueba:_ tests: slug se deriva y colisiones se resuelven; reordenar cambia `sort_order`. _Depende de:_ T-0.2.2
+  **Decisiones:**
+  1. **Lógica pura en `services/catalog_service.py`** (sin base de datos ni API, como `user_service.py`): funciones `validate_category_name`, `slugify`, `unique_slug`, `build_category_slug`, `compute_reorder`. El módulo **no importa repositorios**, para que estos puedan apoyarse en él sin círculos (la lección de la Fase 1); la clase con sesión (`CatalogService` propiamente dicha) llegará en un módulo aparte cuando existan los repositorios.
+  2. **Nombre:** se normaliza (recorta y colapsa espacios), es obligatorio, tiene hasta 60 caracteres (contados sobre el nombre ya normalizado) y necesita al menos una letra o un número (un nombre como `???` no le dice nada al cliente ni da un slug). Acepta cualquier alfabeto. Los errores usan el mismo formato que el resto de la API (`VALIDATION_ERROR`, `details.fields`).
+  3. **Slug:** minúsculas, sin acentos ni ñ (`Sándwiches` → `sandwiches`), todo lo que no sea letra o número pasa a un guion. Un nombre sin ningún carácter latino (`寿司`) cae en `categoria`, así el slug nunca queda vacío. Las colisiones se resuelven con `-2`, `-3`… (el primer número libre, rellenando huecos).
+  4. **El slug se calcula solo al crear:** renombrar una categoría **no** lo cambia, para no romper links que ya apunten a ella.
+  5. **Reordenar recibe la lista completa de ids en el orden deseado** y devuelve `{id: posición}` con posiciones 0, 1, 2… Tiene que ser **exactamente** el conjunto de categorías existentes, cada una una vez: repetidas, inexistentes o faltantes dan error en vez de "arreglarse" en silencio.
+  6. **Activar/desactivar no tiene lógica propia** (es una bandera): lo que importa es su efecto, que una categoría inactiva —y sus productos— no se vea en el catálogo público (`T-3.2.2`).
+  _Prueba:_ **Verificado con 47 tests unitarios** (suite completa: 756 pasan): nombre (espacios, largo justo en el límite, solo símbolos, otros alfabetos); slug con acentos, ñ, símbolos, números y sin caracteres latinos; colisiones (`Sándwiches`/`Sandwiches`/`SÁNDWICHES` → `sandwiches`, `-2`, `-3`), huecos y que un slug numerado solo no bloquea al base; reordenar (identidad, independencia del orden de entrada, y 6 listas inválidas → error sin efectos). _Depende de:_ T-0.2.2
 
 - [ ] **T-3.1.2 · [Backend] Modelo `Category` + repo + migración**
   §6.3. Repo: `list_active`, `list_all`, `create`, `update`, `reorder`.
