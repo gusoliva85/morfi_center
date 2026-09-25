@@ -671,9 +671,15 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
   5. **`reorder` con una lista inválida no cambia nada.** Ordena también a las categorías inactivas.
   _Prueba:_ **Verificado con 31 tests** (suite completa: 787 pasan): alta y lectura; nombres que colisionan (`Sándwiches`/`Sandwiches`/`SÁNDWICHES` → `sandwiches`, `-2`, `-3`); alta al final del menú (también con huecos); nombre inválido → error sin guardar nada; `UNIQUE` real de la base y la carrera simulada contra él; listados en orden y `list_active` sin inactivas; búsqueda por slug; renombrar sin tocar el slug; reactivar; reordenar (persiste en la base, ordena inactivas, 3 listas inválidas sin efecto). Migración probada `upgrade`/`downgrade`/`upgrade` sobre la base local y sumada al test que compara esquema vs. modelos. _Depende de:_ T-3.1.1
 
-- [ ] **T-3.1.3 · [Backend] Endpoints de categorías**
+- [x] **T-3.1.3 · [Backend] Endpoints de categorías**
   `GET /catalog/categories` (público: activas; `?all=true` admin: todas), `POST`, `PATCH /{id}`, `POST /reorder` (admin).
-  _Prueba:_ test: público no ve inactivas; admin crea y reordena. _Depende de:_ T-3.1.2, T-1.5.2
+  **Decisiones:**
+  1. **`GET` público sin mirar el token:** solo cuando se pide `?all=true` se exige sesión (sin sesión → 401; cliente o repartidor → 403; admin → todas, también las inactivas). Así un token vencido no rompe el menú público.
+  2. **El slug no se puede elegir:** `POST` y `PATCH` rechazan cualquier campo desconocido (incluido `slug`) con 422; el slug sale del nombre al crear y no cambia al renombrar.
+  3. **`PATCH` distingue "no mandado" de "nulo":** solo cambia lo que venga; un `name` o `is_active` enviado como `null` es un 422 (ninguno admite vacío), no un "no tocar". Un `PATCH` vacío es válido y no cambia nada. Id inexistente → 404.
+  4. **`POST /reorder` devuelve todas las categorías ya ordenadas** (así el front no tiene que volver a pedir la lista). Lista incompleta, repetida, vacía o con ids inexistentes → 422 en el campo `ids` sin cambiar nada.
+  5. **Sin auditoría en `audit_log`** para categorías (a diferencia de usuarios, configuración y turnos): es contenido del menú, sin dinero ni seguridad de por medio. Se revisará para los precios de los productos.
+  _Prueba:_ **Verificado con 49 tests de API** (suite completa: 836 pasan): el público no ve inactivas y sigue el orden del menú; forma exacta de la respuesta; sin sesión y con un token inválido; `?all=true` para admin/sin sesión/cliente/repartidor; alta (al final del menú, inactiva y oculta, mismo nombre dos veces → slugs distintos, nombre normalizado, 4 nombres inválidos → 422 sin guardar, cuerpos mal formados); `PATCH` (renombrar mantiene el slug, desactivar oculta al público y reactivar la devuelve a su lugar, parcial, vacío, `null` y campos desconocidos, id inexistente); reordenar (el menú público lo sigue, 4 listas inválidas sin efecto, `/reorder` no se confunde con `/{id}`); cliente y repartidor → 403 en cada operación de escritura, sin efectos. _Depende de:_ T-3.1.2, T-1.5.2
 
 ## Tema 3.2 · Productos
 
