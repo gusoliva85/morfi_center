@@ -49,15 +49,19 @@ class ProductRepository:
     def create(
         self,
         *,
-        name: str,
-        category_id: int,
-        base_price: int,
-        description: str | None = None,
-        is_active: bool = True,
+        name: object = None,
+        category_id: object = None,
+        base_price: object = None,
+        description: object = None,
+        is_active: object = True,
     ) -> Product:
         """Crea un producto validando **todas** las reglas de `T-3.2.1` (precio
         en centavos mayor que cero, categoría existente, nombre, descripción):
-        ninguno llega a la base sin pasar por ellas. Va al final de su categoría."""
+        ninguno llega a la base sin pasar por ellas. Va al final de su categoría.
+
+        Los parámetros son `object` a propósito: llegan tal cual de un request y
+        lo que falte o venga mal es un error de validación (con todos los
+        campos juntos), no un `TypeError`."""
         data = validate_new_product(
             {
                 "name": name,

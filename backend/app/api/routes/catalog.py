@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, Request, Response, status
 
 from app.api.deps import NOT_ALLOWED, AdminUser, BearerDep, SessionDep, get_current_user
 from app.core.enums import Role
@@ -11,7 +11,11 @@ from app.schemas.catalog import (
     CategoryOut,
     CategoryReorderIn,
     CategoryUpdateIn,
+    ProductCreateIn,
+    ProductOut,
+    ProductUpdateIn,
 )
+from app.services.catalog_admin_service import CatalogAdminService
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 
@@ -74,3 +78,46 @@ def update_category(
         raise NotFoundError(CATEGORY_NOT_FOUND)
     repo.update(category, **data.model_dump(exclude_unset=True))
     return CategoryOut.model_validate(category)
+
+
+def _client_ip(request: Request) -> str | None:
+    return request.client.host if request.client else None
+
+
+@router.post("/products", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
+def create_product(
+    data: ProductCreateIn, admin: AdminUser, session: SessionDep, request: Request
+) -> ProductOut:
+    """Alta de producto (solo admin). El precio va en **centavos**. Queda en
+    `audit_log`. Si varios campos son inválidos, el 422 los trae todos juntos."""
+    product = CatalogAdminService(session).create_product(
+        admin, data.model_dump(exclude_unset=True), ip=_client_ip(request)
+    )
+    return ProductOut.model_validate(product)
+
+
+@router.patch("/products/{product_id}", response_model=ProductOut)
+def update_product(
+    product_id: int,
+    data: ProductUpdateIn,
+    admin: AdminUser,
+    session: SessionDep,
+    request: Request,
+) -> ProductOut:
+    """Edita solo lo que venga (`description: null` la borra; para volver a
+    mostrar un producto dado de baja, `is_active: true`). Queda en `audit_log`
+    con lo anterior y lo nuevo de los campos que cambiaron."""
+    product = CatalogAdminService(session).update_product(
+        product_id, data.model_dump(exclude_unset=True), admin, ip=_client_ip(request)
+    )
+    return ProductOut.model_validate(product)
+
+
+@router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deactivate_product(
+    product_id: int, admin: AdminUser, session: SessionDep, request: Request
+) -> Response:
+    """**Baja lógica**: el producto se oculta, no se borra (puede tener pedidos).
+    Idempotente: dar de baja uno ya inactivo también responde 204."""
+    CatalogAdminService(session).deactivate_product(product_id, admin, ip=_client_ip(request))
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

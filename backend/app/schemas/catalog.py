@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, model_validator
 
 
@@ -44,3 +46,55 @@ class CategoryReorderIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     ids: list[int]
+
+
+class ProductImageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    path: str
+    is_primary: bool
+    sort_order: int
+
+
+class ProductOut(BaseModel):
+    """Un producto tal como lo ve el panel de admin. `base_price` va en centavos.
+    (El catálogo público, `T-3.2.4`, tiene su propia forma con el precio vigente
+    ya resuelto.)"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    category_id: int
+    name: str
+    description: str | None
+    base_price: int
+    is_active: bool
+    sort_order: int
+    images: list[ProductImageOut]
+
+
+class ProductCreateIn(BaseModel):
+    """Los valores son `Any` a propósito: se validan en `catalog_service` (con las
+    reglas del negocio, mensajes en español y **todos los errores juntos**), no
+    por tipo acá. Sí se rechazan los campos desconocidos."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: Any = None
+    category_id: Any = None
+    base_price: Any = None
+    description: Any = None
+    is_active: Any = True
+
+
+class ProductUpdateIn(BaseModel):
+    """PATCH: solo cambia lo que venga (`description: null` la borra)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: Any = None
+    category_id: Any = None
+    base_price: Any = None
+    description: Any = None
+    is_active: Any = None
