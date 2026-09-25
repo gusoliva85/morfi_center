@@ -21,6 +21,8 @@ EXPECTED_TABLES = {
     "system_settings",
     "shifts",
     "categories",
+    "products",
+    "product_images",
 }
 
 
@@ -92,3 +94,4 @@ def test_check_constraints_survive_the_migration(migrated_db):
     assert "CHECK (service_type IN ('BREAKFAST', 'LUNCH', 'DINNER'))" in ddl
     assert "UNIQUE (service_date, service_type)" in ddl
     assert "CONSTRAINT uq_categories_slug UNIQUE (slug)" in ddl
+    assert "CHECK (base_price > 0)" in ddl

@@ -253,3 +253,16 @@ def validate_product_changes(
             raise _invalid(field, "Este campo no se puede modificar.")
         checks[field] = lambda field=field, value=value: validators[field](value)
     return _run_validators(checks)
+
+
+def search_key(text: str | None) -> str:
+    """Forma de un texto para comparar en búsquedas: sin acentos, en minúsculas
+    y con los espacios colapsados. "  Sándwich  DE Milanesa " -> "sandwich de milanesa".
+
+    Así buscar "sandwich" encuentra "Sándwich" (y al revés), sin que quien busca
+    tenga que acordarse de las tildes."""
+    if not text:
+        return ""
+    decomposed = unicodedata.normalize("NFKD", text)
+    without_marks = "".join(char for char in decomposed if not unicodedata.combining(char))
+    return _SPACES_RE.sub(" ", without_marks.casefold()).strip()
