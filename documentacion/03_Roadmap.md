@@ -683,9 +683,16 @@ Este roadmap cubre las **Fases 0 a 17** (hasta un MVP funcional completo con seg
 
 ## Tema 3.2 · Productos
 
-- [ ] **T-3.2.1 · [Lógica] Reglas de producto**
+- [x] **T-3.2.1 · [Lógica] Reglas de producto**
   Nombre, `category_id` válido, `base_price` > 0 (centavos), descripción opcional, activación. `CatalogService.create_product/update_product`.
-  _Prueba:_ tests: precio 0 o negativo → error; categoría inexistente → error. _Depende de:_ T-3.1.1
+  **Decisiones:**
+  1. **Lógica pura en `services/catalog_service.py`** (junto a las de categoría, sin base de datos): `validate_product_name`, `validate_base_price`, `validate_description`, `validate_category_reference`, `validate_is_active`, y las dos que arman el alta y la edición: `validate_new_product` (devuelve un `ProductData` ya normalizado) y `validate_product_changes` (PATCH). Los servicios con sesión y el repositorio (`T-3.2.2`) se apoyan en esto.
+  2. **Precio: entero en centavos, mayor que cero.** Se rechazan flotantes (`10.5`, `100.0`: errores de redondeo), texto (`"100"`), nulo y booleanos (`True` "es" un 1 en Python). Además hay un **tope de cordura de $1.000.000** (`MAX_PRICE_CENTS`): no es una regla de negocio sino una red contra un cero de más al tipear (un plato de $10.000 cargado como $10.000.000 pasaría en silencio). Si el negocio vendiera algo más caro, se sube la constante.
+  3. **Nombre:** requerido, normalizado (espacios), hasta 80 caracteres y con al menos una letra o número. **Descripción:** opcional, hasta 500; vacía o solo espacios equivale a "sin descripción" (`None`), se recortan los extremos pero se respetan los saltos de línea internos.
+  4. **La categoría tiene que existir, pero puede estar inactiva** (sus productos se cargan igual; solo no se muestran mientras esté oculta, `T-3.2.2`). La lógica recibe el conjunto de ids existentes en vez de consultar una base, para seguir siendo pura. Entra solo un entero real: nulo, texto, flotante o booleano → error.
+  5. **Todos los problemas juntos:** si varios campos fallan se lanza **un solo** error (`VALIDATION_ERROR`) con la lista completa en `details.fields`, así un formulario los muestra a la vez en vez de obligar a corregirlos de a uno.
+  6. **Edición (PATCH):** valida solo los campos que vienen y devuelve esos mismos normalizados; `description: None` **borra** la descripción, pero el resto de los campos no admite `None`. Un campo que no se puede editar (por ejemplo `id`) da error en vez de ignorarse en silencio.
+  _Prueba:_ **Verificado con 71 tests unitarios** (suite completa: 907 pasan): precio (positivos válidos, 0 y negativos, flotantes/texto/nulo/booleanos, el tope justo y pasado); categoría inexistente (99, 0, negativa, nula, texto, flotante, booleano, y sin ninguna categoría); nombre y descripción (bordes de largo inclusivos, espacios, símbolos); activación; alta (normalización, valores por defecto, categoría inactiva, todos los errores a la vez, producto vacío); edición (parcial, vacía, borrar la descripción, ningún obligatorio en `None`, campo no editable, categoría validada solo si se manda). _Depende de:_ T-3.1.1
 
 - [ ] **T-3.2.2 · [Backend] Modelos `Product`, `ProductImage` + repo + migración**
   §6.3. Repo: `list_public(category_id?, search?)`, `get`, `create`, `update`, `set_active`.
